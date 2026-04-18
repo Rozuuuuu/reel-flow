@@ -92,7 +92,7 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
       </button>
 
       {/* Right action rail */}
-      <div className="absolute bottom-28 right-3 z-10 flex flex-col items-center gap-5">
+      <div className="absolute bottom-32 right-3 z-10 flex flex-col items-center gap-5">
         <button
           type="button"
           onClick={onToggleLike}
