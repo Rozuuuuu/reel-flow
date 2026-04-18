@@ -92,7 +92,7 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
       </button>
 
       {/* Right action rail */}
-      <div className="absolute bottom-28 right-3 z-10 flex flex-col items-center gap-5">
+      <div className="absolute bottom-32 right-3 z-10 flex flex-col items-center gap-5">
         <button
           type="button"
           onClick={onToggleLike}
@@ -119,7 +119,7 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
       </div>
 
       {/* Bottom info */}
-      <div className="absolute inset-x-0 bottom-6 z-10 px-4 pr-20 text-white">
+      <div className="absolute inset-x-0 bottom-24 z-10 px-4 pr-20 text-white">
         <div className="mb-3 flex items-center gap-3">
           <Avatar className="h-10 w-10 border-2 border-white/80">
             <AvatarImage src={video.profile?.avatar_url ?? undefined} alt="" />
