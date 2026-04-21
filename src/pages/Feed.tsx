@@ -83,27 +83,37 @@ export default function Feed() {
     containerRef.current?.scrollTo({ top: 0 });
   }, [tab]);
 
-  // Deep-link: scroll to ?v=<id> once the list is available, then clear the param
+  // Deep-link: scroll to ?v=<id> once the target is in the list, then clear the param
   useEffect(() => {
     if (!deepLinkVideoId || list.length === 0) return;
     const idx = list.findIndex((v) => v.id === deepLinkVideoId);
     if (idx < 0) return;
     const root = containerRef.current;
     if (!root) return;
-    // Wait a tick for children to render
     requestAnimationFrame(() => {
       const target = root.querySelector<HTMLElement>(`[data-video-index="${idx}"]`);
       if (target) {
         target.scrollIntoView({ behavior: "auto", block: "start" });
         setActiveIndex(idx);
       }
-      // Clean the URL so a future back/refresh doesn't re-trigger
       const next = new URLSearchParams(searchParams);
       next.delete("v");
       setSearchParams(next, { replace: true });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkVideoId, list]);
+
+  // Deep-link missing from the "following" tab → switch to For You so it shows up
+  useEffect(() => {
+    if (!deepLinkVideoId) return;
+    if (tab !== "following") return;
+    const inList = list.some((v) => v.id === deepLinkVideoId);
+    const inBase = (videos ?? []).some((v) => v.id === deepLinkVideoId);
+    const inFallback = fallbackQuery.data?.id === deepLinkVideoId;
+    if (!inList && (inBase || inFallback)) {
+      setTab("for-you");
+    }
+  }, [deepLinkVideoId, tab, list, videos, fallbackQuery.data]);
 
   const optimisticToggleLike = (video: FeedVideo) => {
     qc.setQueryData<FeedVideo[]>(["feed-videos", user?.id ?? "anon"], (old) => {
