@@ -26,14 +26,33 @@ export default function Feed() {
   // When arriving via ?v=, default to "for-you" so the target video is guaranteed in view
   const [tab, setTab] = useState<FeedTab>(deepLinkVideoId ? "for-you" : "for-you");
 
+  // If the deep-linked video isn't in the base feed, fetch it separately
+  const baseList = videos ?? [];
+  const baseHasDeepLink = deepLinkVideoId
+    ? baseList.some((v) => v.id === deepLinkVideoId)
+    : true;
+  const fallbackQuery = useVideoById(
+    !baseHasDeepLink ? deepLinkVideoId ?? undefined : undefined,
+    user?.id
+  );
+
   const list = useMemo(() => {
-    const base = videos ?? [];
+    let base = baseList;
+    // Prepend the fallback-fetched video so it exists in the scroll list
+    if (
+      deepLinkVideoId &&
+      !baseHasDeepLink &&
+      fallbackQuery.data &&
+      !base.some((v) => v.id === fallbackQuery.data!.id)
+    ) {
+      base = [fallbackQuery.data, ...base];
+    }
     if (tab === "following") {
       const ids = new Set(followingIds ?? []);
       return base.filter((v) => ids.has(v.user_id));
     }
     return base;
-  }, [videos, tab, followingIds]);
+  }, [baseList, tab, followingIds, deepLinkVideoId, baseHasDeepLink, fallbackQuery.data]);
 
   // Detect which video is centered
   useEffect(() => {
