@@ -58,7 +58,7 @@ export default function Search() {
         />
       </div>
 
-      <Tabs defaultValue="users" className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
