@@ -236,9 +236,65 @@ export default function Feed() {
     );
   }
 
+  // Deep-link fallback UX state
+  const deepLinkMissing =
+    !!deepLinkVideoId &&
+    !baseHasDeepLink &&
+    !fallbackQuery.isLoading &&
+    (fallbackQuery.isError || fallbackQuery.data === null);
+  const deepLinkFetching =
+    !!deepLinkVideoId && !baseHasDeepLink && fallbackQuery.isLoading;
+
   return (
     <div className="relative h-[100dvh] bg-black">
       {tabs}
+
+      {deepLinkFetching && (
+        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex justify-center px-4">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm text-white backdrop-blur-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading shared reel…
+          </div>
+        </div>
+      )}
+
+      {deepLinkMissing && (
+        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex justify-center px-4">
+          <div
+            role="alert"
+            className="pointer-events-auto flex max-w-sm items-start gap-3 rounded-xl bg-black/70 px-4 py-3 text-sm text-white shadow-glow backdrop-blur-sm"
+          >
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div className="flex-1">
+              <p className="font-semibold">Reel unavailable</p>
+              <p className="mt-0.5 text-white/70">
+                This shared reel couldn't be found. It may have been removed.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="brand"
+                  onClick={() => fallbackQuery.refetch()}
+                >
+                  Retry
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    const next = new URLSearchParams(searchParams);
+                    next.delete("v");
+                    setSearchParams(next, { replace: true });
+                  }}
+                >
+                  Go to feed
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         ref={containerRef}
         className="scrollbar-hide h-full snap-y snap-mandatory overflow-y-scroll"
