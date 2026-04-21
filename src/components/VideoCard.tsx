@@ -141,6 +141,18 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
             {video.likes_count}
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={handleShare}
+          aria-label="Share"
+          className="flex flex-col items-center gap-1 text-white"
+        >
+          <div className="rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90">
+            <Share2 className="h-7 w-7 text-white" />
+          </div>
+          <span className="text-xs font-semibold drop-shadow">Share</span>
+        </button>
       </div>
 
       {/* Bottom info */}
