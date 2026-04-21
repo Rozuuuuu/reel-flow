@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useFeedVideos, FeedVideo } from "@/hooks/useVideos";
+import { useFeedVideos, useVideoById, FeedVideo } from "@/hooks/useVideos";
 import { useMyFollowingIds } from "@/hooks/useFollows";
 import { VideoCard } from "@/components/VideoCard";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Film, UserPlus } from "lucide-react";
+import { Loader2, Film, UserPlus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,14 +26,33 @@ export default function Feed() {
   // When arriving via ?v=, default to "for-you" so the target video is guaranteed in view
   const [tab, setTab] = useState<FeedTab>(deepLinkVideoId ? "for-you" : "for-you");
 
+  // If the deep-linked video isn't in the base feed, fetch it separately
+  const baseList = videos ?? [];
+  const baseHasDeepLink = deepLinkVideoId
+    ? baseList.some((v) => v.id === deepLinkVideoId)
+    : true;
+  const fallbackQuery = useVideoById(
+    !baseHasDeepLink ? deepLinkVideoId ?? undefined : undefined,
+    user?.id
+  );
+
   const list = useMemo(() => {
-    const base = videos ?? [];
+    let base = baseList;
+    // Prepend the fallback-fetched video so it exists in the scroll list
+    if (
+      deepLinkVideoId &&
+      !baseHasDeepLink &&
+      fallbackQuery.data &&
+      !base.some((v) => v.id === fallbackQuery.data!.id)
+    ) {
+      base = [fallbackQuery.data, ...base];
+    }
     if (tab === "following") {
       const ids = new Set(followingIds ?? []);
       return base.filter((v) => ids.has(v.user_id));
     }
     return base;
-  }, [videos, tab, followingIds]);
+  }, [baseList, tab, followingIds, deepLinkVideoId, baseHasDeepLink, fallbackQuery.data]);
 
   // Detect which video is centered
   useEffect(() => {
@@ -64,27 +83,37 @@ export default function Feed() {
     containerRef.current?.scrollTo({ top: 0 });
   }, [tab]);
 
-  // Deep-link: scroll to ?v=<id> once the list is available, then clear the param
+  // Deep-link: scroll to ?v=<id> once the target is in the list, then clear the param
   useEffect(() => {
     if (!deepLinkVideoId || list.length === 0) return;
     const idx = list.findIndex((v) => v.id === deepLinkVideoId);
     if (idx < 0) return;
     const root = containerRef.current;
     if (!root) return;
-    // Wait a tick for children to render
     requestAnimationFrame(() => {
       const target = root.querySelector<HTMLElement>(`[data-video-index="${idx}"]`);
       if (target) {
         target.scrollIntoView({ behavior: "auto", block: "start" });
         setActiveIndex(idx);
       }
-      // Clean the URL so a future back/refresh doesn't re-trigger
       const next = new URLSearchParams(searchParams);
       next.delete("v");
       setSearchParams(next, { replace: true });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkVideoId, list]);
+
+  // Deep-link missing from the "following" tab → switch to For You so it shows up
+  useEffect(() => {
+    if (!deepLinkVideoId) return;
+    if (tab !== "following") return;
+    const inList = list.some((v) => v.id === deepLinkVideoId);
+    const inBase = (videos ?? []).some((v) => v.id === deepLinkVideoId);
+    const inFallback = fallbackQuery.data?.id === deepLinkVideoId;
+    if (!inList && (inBase || inFallback)) {
+      setTab("for-you");
+    }
+  }, [deepLinkVideoId, tab, list, videos, fallbackQuery.data]);
 
   const optimisticToggleLike = (video: FeedVideo) => {
     qc.setQueryData<FeedVideo[]>(["feed-videos", user?.id ?? "anon"], (old) => {
@@ -207,9 +236,65 @@ export default function Feed() {
     );
   }
 
+  // Deep-link fallback UX state
+  const deepLinkMissing =
+    !!deepLinkVideoId &&
+    !baseHasDeepLink &&
+    !fallbackQuery.isLoading &&
+    (fallbackQuery.isError || fallbackQuery.data === null);
+  const deepLinkFetching =
+    !!deepLinkVideoId && !baseHasDeepLink && fallbackQuery.isLoading;
+
   return (
     <div className="relative h-[100dvh] bg-black">
       {tabs}
+
+      {deepLinkFetching && (
+        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex justify-center px-4">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm text-white backdrop-blur-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading shared reel…
+          </div>
+        </div>
+      )}
+
+      {deepLinkMissing && (
+        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex justify-center px-4">
+          <div
+            role="alert"
+            className="pointer-events-auto flex max-w-sm items-start gap-3 rounded-xl bg-black/70 px-4 py-3 text-sm text-white shadow-glow backdrop-blur-sm"
+          >
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div className="flex-1">
+              <p className="font-semibold">Reel unavailable</p>
+              <p className="mt-0.5 text-white/70">
+                This shared reel couldn't be found. It may have been removed.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="brand"
+                  onClick={() => fallbackQuery.refetch()}
+                >
+                  Retry
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    const next = new URLSearchParams(searchParams);
+                    next.delete("v");
+                    setSearchParams(next, { replace: true });
+                  }}
+                >
+                  Go to feed
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         ref={containerRef}
         className="scrollbar-hide h-full snap-y snap-mandatory overflow-y-scroll"

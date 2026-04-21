@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Volume2, VolumeX, Play } from "lucide-react";
+import { Heart, Volume2, VolumeX, Play, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FollowButton } from "@/components/FollowButton";
+import { toast } from "sonner";
 
 interface Props {
   video: FeedVideo;
@@ -44,6 +45,29 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
     if (!video.liked_by_me) onToggleLike();
     setShowHeart(true);
     setTimeout(() => setShowHeart(false), 600);
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/?v=${video.id}`;
+    const shareData = {
+      title: video.profile?.username ? `@${video.profile.username} on Reels` : "Check out this reel",
+      text: video.caption ?? "Check out this reel",
+      url,
+    };
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+    } catch (err) {
+      if ((err as DOMException)?.name === "AbortError") return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard");
+    } catch {
+      toast.error("Couldn't copy link");
+    }
   };
 
   return (
@@ -116,6 +140,18 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
           <span className="text-xs font-semibold drop-shadow">
             {video.likes_count}
           </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleShare}
+          aria-label="Share"
+          className="flex flex-col items-center gap-1 text-white"
+        >
+          <div className="rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90">
+            <Share2 className="h-7 w-7 text-white" />
+          </div>
+          <span className="text-xs font-semibold drop-shadow">Share</span>
         </button>
       </div>
 
