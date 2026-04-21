@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { Home, PlusSquare, User } from "lucide-react";
+import { Home, PlusSquare, User, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/", label: "Feed", icon: Home },
+  { to: "/search", label: "Search", icon: Search },
   { to: "/upload", label: "Upload", icon: PlusSquare },
   { to: "/profile", label: "Profile", icon: User },
 ];
