@@ -3,19 +3,34 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeedVideos, FeedVideo } from "@/hooks/useVideos";
+import { useMyFollowingIds } from "@/hooks/useFollows";
 import { VideoCard } from "@/components/VideoCard";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Film } from "lucide-react";
+import { Loader2, Film, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+type FeedTab = "for-you" | "following";
 
 export default function Feed() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: videos, isLoading } = useFeedVideos(user?.id);
+  const { data: followingIds } = useMyFollowingIds(user?.id);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [tab, setTab] = useState<FeedTab>("for-you");
+
+  const list = useMemo(() => {
+    const base = videos ?? [];
+    if (tab === "following") {
+      const ids = new Set(followingIds ?? []);
+      return base.filter((v) => ids.has(v.user_id));
+    }
+    return base;
+  }, [videos, tab, followingIds]);
 
   // Detect which video is centered
   useEffect(() => {
@@ -38,7 +53,13 @@ export default function Feed() {
 
     sections.forEach((s) => observer.observe(s));
     return () => observer.disconnect();
-  }, [videos]);
+  }, [list]);
+
+  // Reset index when switching tabs
+  useEffect(() => {
+    setActiveIndex(0);
+    containerRef.current?.scrollTo({ top: 0 });
+  }, [tab]);
 
   const optimisticToggleLike = (video: FeedVideo) => {
     qc.setQueryData<FeedVideo[]>(["feed-videos", user?.id ?? "anon"], (old) => {
@@ -70,7 +91,7 @@ export default function Feed() {
         .eq("user_id", user.id)
         .eq("video_id", video.id);
       if (error) {
-        optimisticToggleLike(video); // revert
+        optimisticToggleLike(video);
         toast.error("Couldn't unlike");
       }
     } else {
@@ -78,13 +99,11 @@ export default function Feed() {
         .from("likes")
         .insert({ user_id: user.id, video_id: video.id });
       if (error && !error.message.includes("duplicate")) {
-        optimisticToggleLike(video); // revert
+        optimisticToggleLike(video);
         toast.error("Couldn't like");
       }
     }
   };
-
-  const list = useMemo(() => videos ?? [], [videos]);
 
   if (isLoading) {
     return (
@@ -94,40 +113,95 @@ export default function Feed() {
     );
   }
 
+  const tabs = (
+    <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center">
+      <div
+        role="tablist"
+        aria-label="Feed type"
+        className="pointer-events-auto flex items-center gap-6 rounded-full px-4 py-2 text-sm font-semibold text-white/70"
+        style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+      >
+        <button
+          role="tab"
+          aria-selected={tab === "following"}
+          onClick={() => setTab("following")}
+          className={cn(
+            "transition drop-shadow",
+            tab === "following" ? "text-white" : "hover:text-white/90"
+          )}
+        >
+          Following
+          {tab === "following" && <span className="mx-auto mt-1 block h-0.5 w-5 rounded-full bg-white" />}
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === "for-you"}
+          onClick={() => setTab("for-you")}
+          className={cn(
+            "transition drop-shadow",
+            tab === "for-you" ? "text-white" : "hover:text-white/90"
+          )}
+        >
+          For You
+          {tab === "for-you" && <span className="mx-auto mt-1 block h-0.5 w-5 rounded-full bg-white" />}
+        </button>
+      </div>
+    </div>
+  );
+
   if (list.length === 0) {
+    const isFollowingEmpty = tab === "following";
     return (
-      <div className="flex h-[100dvh] flex-col items-center justify-center gap-6 bg-background px-6 text-center">
-        <div className="rounded-full bg-gradient-brand p-6 shadow-glow">
-          <Film className="h-12 w-12 text-white" />
+      <div className="relative h-[100dvh] bg-black">
+        {tabs}
+        <div className="flex h-full flex-col items-center justify-center gap-6 px-6 text-center">
+          <div className="rounded-full bg-gradient-brand p-6 shadow-glow">
+            {isFollowingEmpty ? (
+              <UserPlus className="h-12 w-12 text-white" />
+            ) : (
+              <Film className="h-12 w-12 text-white" />
+            )}
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              {isFollowingEmpty ? "Nothing here yet" : "No reels yet"}
+            </h2>
+            <p className="mt-1 text-white/70">
+              {isFollowingEmpty
+                ? "Follow creators to see their reels here."
+                : "Be the first to upload a video."}
+            </p>
+          </div>
+          <Button asChild variant="brand" size="lg">
+            <Link to={isFollowingEmpty ? "/search" : "/upload"}>
+              {isFollowingEmpty ? "Find people to follow" : "Upload your first reel"}
+            </Link>
+          </Button>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold">No reels yet</h2>
-          <p className="mt-1 text-muted-foreground">Be the first to upload a video.</p>
-        </div>
-        <Button asChild variant="brand" size="lg">
-          <Link to="/upload">Upload your first reel</Link>
-        </Button>
       </div>
     );
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="scrollbar-hide h-[100dvh] snap-y snap-mandatory overflow-y-scroll bg-black"
-      style={{ scrollBehavior: "smooth" }}
-    >
-      {list.map((v, i) => (
-        <div key={v.id} data-video-index={i}>
-          <VideoCard
-            video={v}
-            active={i === activeIndex}
-            muted={muted}
-            onToggleMute={() => setMuted((m) => !m)}
-            onToggleLike={() => handleToggleLike(v)}
-          />
-        </div>
-      ))}
+    <div className="relative h-[100dvh] bg-black">
+      {tabs}
+      <div
+        ref={containerRef}
+        className="scrollbar-hide h-full snap-y snap-mandatory overflow-y-scroll"
+        style={{ scrollBehavior: "smooth" }}
+      >
+        {list.map((v, i) => (
+          <div key={v.id} data-video-index={i}>
+            <VideoCard
+              video={v}
+              active={i === activeIndex}
+              muted={muted}
+              onToggleMute={() => setMuted((m) => !m)}
+              onToggleLike={() => handleToggleLike(v)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
