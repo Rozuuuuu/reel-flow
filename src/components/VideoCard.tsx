@@ -47,6 +47,29 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
     setTimeout(() => setShowHeart(false), 600);
   };
 
+  const handleShare = async () => {
+    const url = `${window.location.origin}/?v=${video.id}`;
+    const shareData = {
+      title: video.profile?.username ? `@${video.profile.username} on Reels` : "Check out this reel",
+      text: video.caption ?? "Check out this reel",
+      url,
+    };
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+    } catch (err) {
+      if ((err as DOMException)?.name === "AbortError") return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard");
+    } catch {
+      toast.error("Couldn't copy link");
+    }
+  };
+
   return (
     <section className="relative h-[100dvh] w-full snap-start snap-always bg-black">
       <video
