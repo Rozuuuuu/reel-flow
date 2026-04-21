@@ -62,6 +62,50 @@ export const useFeedVideos = (currentUserId: string | undefined) => {
   });
 };
 
+export const useVideoById = (videoId: string | undefined, currentUserId: string | undefined) => {
+  return useQuery({
+    queryKey: ["video-by-id", videoId, currentUserId ?? "anon"],
+    enabled: !!videoId,
+    queryFn: async (): Promise<FeedVideo | null> => {
+      const { data: video, error } = await supabase
+        .from("videos")
+        .select("*")
+        .eq("id", videoId!)
+        .maybeSingle();
+      if (error) throw error;
+      if (!video) return null;
+
+      const [profileRes, likesCountRes, myLikeRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, username, display_name, avatar_url")
+          .eq("id", video.user_id)
+          .maybeSingle(),
+        supabase
+          .from("likes")
+          .select("video_id", { count: "exact", head: true })
+          .eq("video_id", video.id),
+        currentUserId
+          ? supabase
+              .from("likes")
+              .select("video_id")
+              .eq("user_id", currentUserId)
+              .eq("video_id", video.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null } as { data: null; error: null }),
+      ]);
+
+      return {
+        ...video,
+        hashtags: video.hashtags ?? [],
+        profile: profileRes.data ?? null,
+        likes_count: likesCountRes.count ?? 0,
+        liked_by_me: !!myLikeRes.data,
+      };
+    },
+  });
+};
+
 export const useMyVideos = (userId: string | undefined) => {
   return useQuery({
     queryKey: ["my-videos", userId],
