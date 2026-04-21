@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeedVideos, FeedVideo } from "@/hooks/useVideos";
 import { useMyFollowingIds } from "@/hooks/useFollows";
@@ -16,12 +16,15 @@ type FeedTab = "for-you" | "following";
 export default function Feed() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkVideoId = searchParams.get("v");
   const { data: videos, isLoading } = useFeedVideos(user?.id);
   const { data: followingIds } = useMyFollowingIds(user?.id);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(true);
-  const [tab, setTab] = useState<FeedTab>("for-you");
+  // When arriving via ?v=, default to "for-you" so the target video is guaranteed in view
+  const [tab, setTab] = useState<FeedTab>(deepLinkVideoId ? "for-you" : "for-you");
 
   const list = useMemo(() => {
     const base = videos ?? [];
@@ -60,6 +63,28 @@ export default function Feed() {
     setActiveIndex(0);
     containerRef.current?.scrollTo({ top: 0 });
   }, [tab]);
+
+  // Deep-link: scroll to ?v=<id> once the list is available, then clear the param
+  useEffect(() => {
+    if (!deepLinkVideoId || list.length === 0) return;
+    const idx = list.findIndex((v) => v.id === deepLinkVideoId);
+    if (idx < 0) return;
+    const root = containerRef.current;
+    if (!root) return;
+    // Wait a tick for children to render
+    requestAnimationFrame(() => {
+      const target = root.querySelector<HTMLElement>(`[data-video-index="${idx}"]`);
+      if (target) {
+        target.scrollIntoView({ behavior: "auto", block: "start" });
+        setActiveIndex(idx);
+      }
+      // Clean the URL so a future back/refresh doesn't re-trigger
+      const next = new URLSearchParams(searchParams);
+      next.delete("v");
+      setSearchParams(next, { replace: true });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkVideoId, list]);
 
   const optimisticToggleLike = (video: FeedVideo) => {
     qc.setQueryData<FeedVideo[]>(["feed-videos", user?.id ?? "anon"], (old) => {

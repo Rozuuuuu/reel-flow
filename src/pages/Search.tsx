@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Search as SearchIcon, Loader2, Hash, Play } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,8 +13,30 @@ import {
 } from "@/hooks/useSearch";
 
 export default function Search() {
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQ = searchParams.get("q") ?? "";
+  const initialTab = searchParams.get("tab") ?? "users";
+  const [query, setQuery] = useState(initialQ);
+  const [tab, setTab] = useState(initialTab);
   const debounced = useDebounce(query, 300);
+
+  // Sync external param changes (e.g. tapping a hashtag elsewhere) into state
+  useEffect(() => {
+    const q = searchParams.get("q") ?? "";
+    const t = searchParams.get("tab") ?? "users";
+    setQuery(q);
+    setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString()]);
+
+  // Reflect current query/tab into the URL (shallow, no history spam)
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    if (tab && tab !== "users") next.set("tab", tab);
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, tab]);
 
   const users = useSearchUsers(debounced);
   const videos = useSearchVideos(debounced);
@@ -36,7 +58,7 @@ export default function Search() {
         />
       </div>
 
-      <Tabs defaultValue="users" className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
@@ -87,9 +109,14 @@ export default function Search() {
             <EmptyHint label="No hashtags found" />
           ) : (
             hashtags.data!.map((h) => (
-              <div
+              <button
                 key={h.tag}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
+                type="button"
+                onClick={() => {
+                  setQuery(`#${h.tag}`);
+                  setTab("videos");
+                }}
+                className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition hover:bg-accent"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-brand">
                   <Hash className="h-6 w-6 text-white" />
@@ -100,7 +127,7 @@ export default function Search() {
                     {h.count} {h.count === 1 ? "video" : "videos"}
                   </div>
                 </div>
-              </div>
+              </button>
             ))
           )}
         </TabsContent>
@@ -118,7 +145,7 @@ export default function Search() {
               {videos.data!.map((v) => (
                 <Link
                   key={v.id}
-                  to="/"
+                  to={`/?v=${v.id}`}
                   className="group relative aspect-[9/16] overflow-hidden rounded-md bg-muted"
                 >
                   {v.thumbnail_url ? (
