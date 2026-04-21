@@ -13,8 +13,30 @@ import {
 } from "@/hooks/useSearch";
 
 export default function Search() {
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQ = searchParams.get("q") ?? "";
+  const initialTab = searchParams.get("tab") ?? "users";
+  const [query, setQuery] = useState(initialQ);
+  const [tab, setTab] = useState(initialTab);
   const debounced = useDebounce(query, 300);
+
+  // Sync external param changes (e.g. tapping a hashtag elsewhere) into state
+  useEffect(() => {
+    const q = searchParams.get("q") ?? "";
+    const t = searchParams.get("tab") ?? "users";
+    setQuery(q);
+    setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString()]);
+
+  // Reflect current query/tab into the URL (shallow, no history spam)
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    if (tab && tab !== "users") next.set("tab", tab);
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, tab]);
 
   const users = useSearchUsers(debounced);
   const videos = useSearchVideos(debounced);
