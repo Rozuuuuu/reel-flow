@@ -145,7 +145,7 @@ export default function Search() {
               {videos.data!.map((v) => (
                 <Link
                   key={v.id}
-                  to="/"
+                  to={`/?v=${v.id}`}
                   className="group relative aspect-[9/16] overflow-hidden rounded-md bg-muted"
                 >
                   {v.thumbnail_url ? (
