@@ -16,12 +16,15 @@ type FeedTab = "for-you" | "following";
 export default function Feed() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkVideoId = searchParams.get("v");
   const { data: videos, isLoading } = useFeedVideos(user?.id);
   const { data: followingIds } = useMyFollowingIds(user?.id);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(true);
-  const [tab, setTab] = useState<FeedTab>("for-you");
+  // When arriving via ?v=, default to "for-you" so the target video is guaranteed in view
+  const [tab, setTab] = useState<FeedTab>(deepLinkVideoId ? "for-you" : "for-you");
 
   const list = useMemo(() => {
     const base = videos ?? [];
