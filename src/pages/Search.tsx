@@ -109,9 +109,14 @@ export default function Search() {
             <EmptyHint label="No hashtags found" />
           ) : (
             hashtags.data!.map((h) => (
-              <div
+              <button
                 key={h.tag}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
+                type="button"
+                onClick={() => {
+                  setQuery(`#${h.tag}`);
+                  setTab("videos");
+                }}
+                className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition hover:bg-accent"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-brand">
                   <Hash className="h-6 w-6 text-white" />
@@ -122,7 +127,7 @@ export default function Search() {
                     {h.count} {h.count === 1 ? "video" : "videos"}
                   </div>
                 </div>
-              </div>
+              </button>
             ))
           )}
         </TabsContent>
