@@ -3,6 +3,7 @@ import { Heart, Volume2, VolumeX, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FollowButton } from "@/components/FollowButton";
 
 interface Props {
   video: FeedVideo;
@@ -127,9 +128,10 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
               {(video.profile?.username ?? "U")[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="font-semibold drop-shadow">
+          <div className="flex-1 font-semibold drop-shadow">
             @{video.profile?.username ?? "unknown"}
           </div>
+          <FollowButton targetUserId={video.user_id} />
         </div>
         {video.caption && (
           <p className="line-clamp-3 text-sm leading-snug drop-shadow">

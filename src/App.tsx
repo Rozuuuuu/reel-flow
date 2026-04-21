@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { RequireAuth } from "@/components/RequireAuth";
 import Auth from "./pages/Auth.tsx";
 import Feed from "./pages/Feed.tsx";
+import Search from "./pages/Search.tsx";
 import Upload from "./pages/Upload.tsx";
 import Profile from "./pages/Profile.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
               <Route path="/" element={<Feed />} />
+              <Route path="/search" element={<Search />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
