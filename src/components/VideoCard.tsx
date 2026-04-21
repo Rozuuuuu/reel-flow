@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Volume2, VolumeX, Play } from "lucide-react";
+import { Heart, Volume2, VolumeX, Play, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FollowButton } from "@/components/FollowButton";
+import { toast } from "sonner";
 
 interface Props {
   video: FeedVideo;
