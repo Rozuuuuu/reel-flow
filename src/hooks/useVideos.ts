@@ -86,34 +86,21 @@ export const useVideoById = (videoId: string | undefined, currentUserId: string 
         // RLS hides private/removed videos from non-owners — ask the edge
         // function (service-role) to tell us which case this actually is.
         try {
-          const { data, error: fnError } = await supabase.functions.invoke(
-            "video-status",
-            { method: "GET", body: undefined as never },
-          );
-          // The functions client doesn't support GET query params cleanly;
-          // fall back to a direct fetch with the id in the query string.
-          if (fnError || !data) throw fnError ?? new Error("no data");
-          const status = (data as { status?: VideoStatus }).status ?? "not_found";
-          return { status, video: null };
-        } catch {
-          // Try direct fetch as a backup
-          try {
-            const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/video-status?id=${encodeURIComponent(videoId!)}`;
-            const res = await fetch(url, {
-              headers: {
-                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              },
-            });
-            if (res.ok) {
-              const json = (await res.json()) as { status?: VideoStatus };
-              return { status: json.status ?? "not_found", video: null };
-            }
-          } catch {
-            // ignore
+          const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/video-status?id=${encodeURIComponent(videoId!)}`;
+          const res = await fetch(url, {
+            headers: {
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+          });
+          if (res.ok) {
+            const json = (await res.json()) as { status?: VideoStatus };
+            return { status: json.status ?? "not_found", video: null };
           }
-          return { status: "not_found", video: null };
+        } catch {
+          // ignore — fall through to not_found
         }
+        return { status: "not_found", video: null };
       }
 
       const [profileRes, likesCountRes, myLikeRes] = await Promise.all([
