@@ -62,18 +62,59 @@ export const useFeedVideos = (currentUserId: string | undefined) => {
   });
 };
 
+export type VideoStatus = "available" | "private" | "removed" | "not_found";
+
+export interface VideoByIdResult {
+  status: VideoStatus;
+  video: FeedVideo | null;
+}
+
 export const useVideoById = (videoId: string | undefined, currentUserId: string | undefined) => {
   return useQuery({
     queryKey: ["video-by-id", videoId, currentUserId ?? "anon"],
     enabled: !!videoId,
-    queryFn: async (): Promise<FeedVideo | null> => {
+    retry: 1,
+    queryFn: async (): Promise<VideoByIdResult> => {
       const { data: video, error } = await supabase
         .from("videos")
         .select("*")
         .eq("id", videoId!)
         .maybeSingle();
       if (error) throw error;
-      if (!video) return null;
+
+      if (!video) {
+        // RLS hides private/removed videos from non-owners — ask the edge
+        // function (service-role) to tell us which case this actually is.
+        try {
+          const { data, error: fnError } = await supabase.functions.invoke(
+            "video-status",
+            { method: "GET", body: undefined as never },
+          );
+          // The functions client doesn't support GET query params cleanly;
+          // fall back to a direct fetch with the id in the query string.
+          if (fnError || !data) throw fnError ?? new Error("no data");
+          const status = (data as { status?: VideoStatus }).status ?? "not_found";
+          return { status, video: null };
+        } catch {
+          // Try direct fetch as a backup
+          try {
+            const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/video-status?id=${encodeURIComponent(videoId!)}`;
+            const res = await fetch(url, {
+              headers: {
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+            });
+            if (res.ok) {
+              const json = (await res.json()) as { status?: VideoStatus };
+              return { status: json.status ?? "not_found", video: null };
+            }
+          } catch {
+            // ignore
+          }
+          return { status: "not_found", video: null };
+        }
+      }
 
       const [profileRes, likesCountRes, myLikeRes] = await Promise.all([
         supabase
@@ -96,11 +137,14 @@ export const useVideoById = (videoId: string | undefined, currentUserId: string 
       ]);
 
       return {
-        ...video,
-        hashtags: video.hashtags ?? [],
-        profile: profileRes.data ?? null,
-        likes_count: likesCountRes.count ?? 0,
-        liked_by_me: !!myLikeRes.data,
+        status: "available",
+        video: {
+          ...video,
+          hashtags: video.hashtags ?? [],
+          profile: profileRes.data ?? null,
+          likes_count: likesCountRes.count ?? 0,
+          liked_by_me: !!myLikeRes.data,
+        },
       };
     },
   });
