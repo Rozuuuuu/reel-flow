@@ -111,7 +111,7 @@ export default function Feed() {
     if (tab !== "following") return;
     const inList = list.some((v) => v.id === deepLinkVideoId);
     const inBase = (videos ?? []).some((v) => v.id === deepLinkVideoId);
-    const inFallback = fallbackQuery.data?.id === deepLinkVideoId;
+    const inFallback = fallbackVideo?.id === deepLinkVideoId;
     if (!inList && (inBase || inFallback)) {
       setTab("for-you");
     }
