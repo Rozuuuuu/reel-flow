@@ -1,10 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Volume2, VolumeX, Play, Share2 } from "lucide-react";
+import { Heart, Volume2, VolumeX, Play, Share2, Copy, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FollowButton } from "@/components/FollowButton";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
+const buildShareUrl = (videoId: string) => {
+  // Preserve the route the user is on (e.g. "/", "/feed") so the deep link
+  // returns them to the same view, with ?v=<id> appended for the exact reel.
+  const { origin, pathname, search } = window.location;
+  const params = new URLSearchParams(search);
+  params.set("v", videoId);
+  // Strip any trailing slash on a non-root path to keep URLs clean
+  const path = pathname === "/" ? "/" : pathname.replace(/\/$/, "");
+  return `${origin}${path}?${params.toString()}`;
+};
 
 interface Props {
   video: FeedVideo;
