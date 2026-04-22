@@ -62,31 +62,48 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   };
 
   const handleShare = async () => {
-    const url = buildShareUrl(video.id);
+    const { shareUrl, usesEdgeFunction } = makeShareUrl(video.id);
+    void trackEvent("share_open", {
+      props: { video_id: video.id, uses_edge_function: usesEdgeFunction },
+    });
     const shareData = {
       title: video.profile?.username
         ? `@${video.profile.username} on Reelo`
         : "Check out this reel",
       text: video.caption ?? "Check out this reel",
-      url,
+      url: shareUrl,
     };
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share(shareData);
+        void trackEvent("share_native_success", {
+          props: { video_id: video.id },
+        });
         return;
       }
     } catch (err) {
-      if ((err as DOMException)?.name === "AbortError") return;
+      if ((err as DOMException)?.name === "AbortError") {
+        void trackEvent("share_native_aborted", {
+          props: { video_id: video.id },
+        });
+        return;
+      }
     }
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       toast.success("Link copied to clipboard");
+      void trackEvent("share_copy_success", {
+        props: { video_id: video.id, surface: "auto" },
+      });
       return;
     } catch {
       // Clipboard blocked (permissions, insecure context, iframe, etc.)
       // Surface a manual fallback panel with the link + a Copy button.
       setCopied(false);
-      setShareFallback(url);
+      setShareFallback(shareUrl);
+      void trackEvent("share_fallback_open", {
+        props: { video_id: video.id },
+      });
     }
   };
 
@@ -96,6 +113,9 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
       await navigator.clipboard.writeText(shareFallback);
       setCopied(true);
       toast.success("Link copied");
+      void trackEvent("share_fallback_copy_success", {
+        props: { video_id: video.id },
+      });
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // Final fallback: select the input text so the user can copy manually
@@ -104,6 +124,9 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
       ) as HTMLInputElement | null;
       input?.select();
       toast.error("Couldn't copy automatically — text is selected, press ⌘/Ctrl+C");
+      void trackEvent("share_fallback_copy_failed", {
+        props: { video_id: video.id },
+      });
     }
   };
 
