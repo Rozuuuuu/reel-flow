@@ -64,9 +64,18 @@ export const useFeedVideos = (currentUserId: string | undefined) => {
 
 export type VideoStatus = "available" | "private" | "removed" | "not_found";
 
+export interface CreatorRef {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
 export interface VideoByIdResult {
   status: VideoStatus;
   video: FeedVideo | null;
+  /** Creator profile when known (private/removed via edge fn, or available reels). */
+  creator: CreatorRef | null;
 }
 
 export const useVideoById = (videoId: string | undefined, currentUserId: string | undefined) => {
@@ -94,13 +103,20 @@ export const useVideoById = (videoId: string | undefined, currentUserId: string 
             },
           });
           if (res.ok) {
-            const json = (await res.json()) as { status?: VideoStatus };
-            return { status: json.status ?? "not_found", video: null };
+            const json = (await res.json()) as {
+              status?: VideoStatus;
+              creator?: CreatorRef | null;
+            };
+            return {
+              status: json.status ?? "not_found",
+              video: null,
+              creator: json.creator ?? null,
+            };
           }
         } catch {
           // ignore — fall through to not_found
         }
-        return { status: "not_found", video: null };
+        return { status: "not_found", video: null, creator: null };
       }
 
       const [profileRes, likesCountRes, myLikeRes] = await Promise.all([
