@@ -141,6 +141,9 @@ export const useVideoById = (videoId: string | undefined, currentUserId: string 
 
       return {
         status: "available",
+        creator: profileRes.data
+          ? { id: video.user_id, ...profileRes.data }
+          : null,
         video: {
           ...video,
           hashtags: video.hashtags ?? [],
