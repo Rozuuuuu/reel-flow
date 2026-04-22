@@ -217,6 +217,64 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
           </p>
         )}
       </div>
+
+      {/* Share fallback panel — shown only when navigator.share AND clipboard both fail */}
+      {shareFallback && (
+        <div
+          role="dialog"
+          aria-label="Copy share link"
+          className="absolute inset-0 z-20 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+          onClick={() => setShareFallback(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-t-2xl bg-card p-4 text-card-foreground shadow-glow sm:rounded-2xl"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Copy share link</h2>
+              <button
+                type="button"
+                onClick={() => setShareFallback(null)}
+                aria-label="Close"
+                className="rounded-md p-1 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Your browser blocked automatic copying. Tap the button or copy the link manually.
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                id={`share-fallback-${video.id}`}
+                readOnly
+                value={shareFallback}
+                onFocus={(e) => e.currentTarget.select()}
+                className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-2 text-xs"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant={copied ? "secondary" : "brand"}
+                onClick={copyFromFallback}
+                className="shrink-0"
+              >
+                {copied ? (
+                  <>
+                    <Check className="mr-1 h-4 w-4" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-1 h-4 w-4" />
+                    Copy link
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
