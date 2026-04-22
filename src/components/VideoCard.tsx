@@ -30,6 +30,8 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   const ref = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
+  const [shareFallback, setShareFallback] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -60,9 +62,11 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/?v=${video.id}`;
+    const url = buildShareUrl(video.id);
     const shareData = {
-      title: video.profile?.username ? `@${video.profile.username} on Reels` : "Check out this reel",
+      title: video.profile?.username
+        ? `@${video.profile.username} on Reelo`
+        : "Check out this reel",
       text: video.caption ?? "Check out this reel",
       url,
     };
@@ -77,8 +81,29 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
     try {
       await navigator.clipboard.writeText(url);
       toast.success("Link copied to clipboard");
+      return;
     } catch {
-      toast.error("Couldn't copy link");
+      // Clipboard blocked (permissions, insecure context, iframe, etc.)
+      // Surface a manual fallback panel with the link + a Copy button.
+      setCopied(false);
+      setShareFallback(url);
+    }
+  };
+
+  const copyFromFallback = async () => {
+    if (!shareFallback) return;
+    try {
+      await navigator.clipboard.writeText(shareFallback);
+      setCopied(true);
+      toast.success("Link copied");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Final fallback: select the input text so the user can copy manually
+      const input = document.getElementById(
+        `share-fallback-${video.id}`,
+      ) as HTMLInputElement | null;
+      input?.select();
+      toast.error("Couldn't copy automatically — text is selected, press ⌘/Ctrl+C");
     }
   };
 
