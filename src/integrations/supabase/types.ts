@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          id: string
+          props: Json
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          id?: string
+          props?: Json
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          id?: string
+          props?: Json
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      follow_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          requester_id: string
+          responded_at: string | null
+          status: Database["public"]["Enums"]["follow_request_status"]
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          requester_id: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["follow_request_status"]
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          requester_id?: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["follow_request_status"]
+          target_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -141,7 +198,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      follow_request_status: "pending" | "accepted" | "declined"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -268,6 +325,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      follow_request_status: ["pending", "accepted", "declined"],
+    },
   },
 } as const
