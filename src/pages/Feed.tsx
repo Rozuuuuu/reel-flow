@@ -6,7 +6,7 @@ import { useFeedVideos, useVideoById, FeedVideo } from "@/hooks/useVideos";
 import { useMyFollowingIds } from "@/hooks/useFollows";
 import { VideoCard } from "@/components/VideoCard";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Film, UserPlus, AlertCircle } from "lucide-react";
+import { Loader2, Film, UserPlus, AlertCircle, Lock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,8 @@ export default function Feed() {
     !baseHasDeepLink ? deepLinkVideoId ?? undefined : undefined,
     user?.id
   );
+  const fallbackVideo = fallbackQuery.data?.video ?? null;
+  const fallbackStatus = fallbackQuery.data?.status;
 
   const list = useMemo(() => {
     let base = baseList;
@@ -42,17 +44,17 @@ export default function Feed() {
     if (
       deepLinkVideoId &&
       !baseHasDeepLink &&
-      fallbackQuery.data &&
-      !base.some((v) => v.id === fallbackQuery.data!.id)
+      fallbackVideo &&
+      !base.some((v) => v.id === fallbackVideo.id)
     ) {
-      base = [fallbackQuery.data, ...base];
+      base = [fallbackVideo, ...base];
     }
     if (tab === "following") {
       const ids = new Set(followingIds ?? []);
       return base.filter((v) => ids.has(v.user_id));
     }
     return base;
-  }, [baseList, tab, followingIds, deepLinkVideoId, baseHasDeepLink, fallbackQuery.data]);
+  }, [baseList, tab, followingIds, deepLinkVideoId, baseHasDeepLink, fallbackVideo]);
 
   // Detect which video is centered
   useEffect(() => {
