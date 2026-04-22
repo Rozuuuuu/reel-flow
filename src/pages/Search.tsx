@@ -79,20 +79,25 @@ export default function Search() {
                 key={u.id}
                 className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
               >
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={u.avatar_url ?? undefined} alt="" />
-                  <AvatarFallback className="bg-gradient-brand text-white">
-                    {u.username[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">@{u.username}</div>
-                  {u.display_name && (
-                    <div className="truncate text-sm text-muted-foreground">
-                      {u.display_name}
-                    </div>
-                  )}
-                </div>
+                <Link
+                  to={`/u/${u.username}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={u.avatar_url ?? undefined} alt="" />
+                    <AvatarFallback className="bg-gradient-brand text-white">
+                      {u.username[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">@{u.username}</div>
+                    {u.display_name && (
+                      <div className="truncate text-sm text-muted-foreground">
+                        {u.display_name}
+                      </div>
+                    )}
+                  </div>
+                </Link>
                 <FollowButton targetUserId={u.id} />
               </div>
             ))

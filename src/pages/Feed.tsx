@@ -6,10 +6,11 @@ import { useFeedVideos, useVideoById, FeedVideo } from "@/hooks/useVideos";
 import { useMyFollowingIds } from "@/hooks/useFollows";
 import { VideoCard } from "@/components/VideoCard";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Film, UserPlus, AlertCircle, Lock, Trash2 } from "lucide-react";
+import { Loader2, Film, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { DeepLinkBanner } from "@/components/DeepLinkBanner";
 
 type FeedTab = "for-you" | "following";
 
@@ -242,6 +243,7 @@ export default function Feed() {
   const deepLinkActive = !!deepLinkVideoId && !baseHasDeepLink;
   const deepLinkFetching = deepLinkActive && fallbackQuery.isLoading;
   const deepLinkErrored = deepLinkActive && fallbackQuery.isError;
+  const fallbackCreator = fallbackQuery.data?.creator ?? null;
   // Distinct states once the lookup resolves with no playable video
   const deepLinkState: "private" | "removed" | "not_found" | null =
     deepLinkActive && !fallbackVideo && !fallbackQuery.isLoading
@@ -253,29 +255,6 @@ export default function Feed() {
             ? "removed"
             : "not_found"
       : null;
-
-  const stateCopy = {
-    private: {
-      Icon: Lock,
-      title: "This reel is private",
-      body: "The creator has set this reel to private. Only they can view it.",
-      retry: false,
-    },
-    removed: {
-      Icon: Trash2,
-      title: "This reel was removed",
-      body: "The creator deleted this reel. It's no longer available.",
-      retry: false,
-    },
-    not_found: {
-      Icon: AlertCircle,
-      title: deepLinkErrored ? "Couldn't load this reel" : "Reel not found",
-      body: deepLinkErrored
-        ? "We couldn't reach the server. Check your connection and try again."
-        : "This shared reel couldn't be found. The link may be wrong or the reel was removed.",
-      retry: true,
-    },
-  } as const;
 
   const clearDeepLink = () => {
     const next = new URLSearchParams(searchParams);
@@ -296,45 +275,17 @@ export default function Feed() {
         </div>
       )}
 
-      {deepLinkState && (() => {
-        const { Icon, title, body, retry } = stateCopy[deepLinkState];
-        return (
-          <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex justify-center px-4">
-            <div
-              role="alert"
-              className="pointer-events-auto flex max-w-sm items-start gap-3 rounded-xl bg-black/70 px-4 py-3 text-sm text-white shadow-glow backdrop-blur-sm"
-            >
-              <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-              <div className="flex-1">
-                <p className="font-semibold">{title}</p>
-                <p className="mt-0.5 text-white/70">{body}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {retry && (
-                    <Button
-                      size="sm"
-                      variant="brand"
-                      onClick={() => fallbackQuery.refetch()}
-                      disabled={fallbackQuery.isFetching}
-                    >
-                      {fallbackQuery.isFetching ? (
-                        <>
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                          Retrying…
-                        </>
-                      ) : (
-                        "Try again"
-                      )}
-                    </Button>
-                  )}
-                  <Button size="sm" variant="secondary" onClick={clearDeepLink}>
-                    Go to feed
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {deepLinkState && deepLinkVideoId && (
+        <DeepLinkBanner
+          state={deepLinkState}
+          videoId={deepLinkVideoId}
+          errored={deepLinkErrored}
+          retrying={fallbackQuery.isFetching}
+          creator={fallbackCreator}
+          onRetry={() => fallbackQuery.refetch()}
+          onDismiss={clearDeepLink}
+        />
+      )}
 
 
       <div

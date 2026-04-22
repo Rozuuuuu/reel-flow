@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyProfile, useMyVideos } from "@/hooks/useVideos";
+import {
+  useMyIncomingRequests,
+  useRespondToFollowRequest,
+} from "@/hooks/useFollowRequests";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Film, LogOut, Pencil, Loader2, Trash2 } from "lucide-react";
+import { Film, LogOut, Pencil, Loader2, Trash2, Inbox, Check, X } from "lucide-react";
 import { z } from "zod";
 
 const displayNameSchema = z.string().trim().min(1).max(50);
@@ -21,6 +25,8 @@ export default function Profile() {
   const qc = useQueryClient();
   const { data: profile, isLoading } = useMyProfile(user?.id);
   const { data: videos } = useMyVideos(user?.id);
+  const { data: incoming } = useMyIncomingRequests(user?.id);
+  const respond = useRespondToFollowRequest(user?.id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -171,6 +177,61 @@ export default function Profile() {
           </Button>
         </div>
       </header>
+
+      {incoming && incoming.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <Inbox className="h-4 w-4" /> Follow requests ({incoming.length})
+          </h2>
+          <div className="space-y-2">
+            {incoming.map((req) => (
+              <div
+                key={req.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={req.requester?.avatar_url ?? undefined} alt="" />
+                  <AvatarFallback className="bg-gradient-brand text-white">
+                    {(req.requester?.username ?? "U")[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">
+                    @{req.requester?.username ?? "unknown"}
+                  </div>
+                  {req.message && (
+                    <p className="truncate text-xs text-muted-foreground">
+                      "{req.message}"
+                    </p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="brand"
+                  onClick={() =>
+                    respond.mutate({ requestId: req.id, status: "accepted" })
+                  }
+                  disabled={respond.isPending}
+                  aria-label="Accept"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    respond.mutate({ requestId: req.id, status: "declined" })
+                  }
+                  disabled={respond.isPending}
+                  aria-label="Decline"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         <Film className="h-4 w-4" /> Your reels ({videos?.length ?? 0})
