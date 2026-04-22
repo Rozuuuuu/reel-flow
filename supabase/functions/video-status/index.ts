@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { data, error } = await admin
       .from("videos")
-      .select("id, is_private, deleted_at")
+      .select("id, user_id, is_private, deleted_at")
       .eq("id", id)
       .maybeSingle();
 
@@ -48,13 +48,22 @@ Deno.serve(async (req) => {
     }
 
     let status: Status = "not_found";
+    let creator: { id: string; username: string; display_name: string | null; avatar_url: string | null } | null = null;
     if (data) {
       if (data.deleted_at) status = "removed";
       else if (data.is_private) status = "private";
       else status = "available";
+
+      // Surface creator info for the UI (private state needs username for "View profile"/Request access).
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("id, username, display_name, avatar_url")
+        .eq("id", data.user_id)
+        .maybeSingle();
+      if (profile) creator = profile;
     }
 
-    return new Response(JSON.stringify({ status }), {
+    return new Response(JSON.stringify({ status, creator }), {
       status: 200,
       headers: {
         ...corsHeaders,
