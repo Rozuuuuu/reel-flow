@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyProfile, useMyVideos } from "@/hooks/useVideos";
+import {
+  useMyIncomingRequests,
+  useRespondToFollowRequest,
+} from "@/hooks/useFollowRequests";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Film, LogOut, Pencil, Loader2, Trash2 } from "lucide-react";
+import { Film, LogOut, Pencil, Loader2, Trash2, Inbox, Check, X } from "lucide-react";
 import { z } from "zod";
 
 const displayNameSchema = z.string().trim().min(1).max(50);
