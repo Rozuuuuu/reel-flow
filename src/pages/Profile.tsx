@@ -25,6 +25,8 @@ export default function Profile() {
   const qc = useQueryClient();
   const { data: profile, isLoading } = useMyProfile(user?.id);
   const { data: videos } = useMyVideos(user?.id);
+  const { data: incoming } = useMyIncomingRequests(user?.id);
+  const respond = useRespondToFollowRequest(user?.id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
