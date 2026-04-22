@@ -8,14 +8,22 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const buildShareUrl = (videoId: string) => {
-  // Preserve the route the user is on (e.g. "/", "/feed") so the deep link
-  // returns them to the same view, with ?v=<id> appended for the exact reel.
+  // Recipients get a link that goes through the OG edge function so social
+  // previews show the actual reel thumbnail/caption. The function then
+  // redirects them to the SPA at the current route + ?v=<id>, preserving
+  // the exact reel position.
   const { origin, pathname, search } = window.location;
   const params = new URLSearchParams(search);
-  params.set("v", videoId);
-  // Strip any trailing slash on a non-root path to keep URLs clean
+  params.delete("v"); // current ?v gets replaced below
   const path = pathname === "/" ? "/" : pathname.replace(/\/$/, "");
-  return `${origin}${path}?${params.toString()}`;
+  const remainingParams = params.toString();
+  const appReturnUrl = `${origin}${path}${remainingParams ? `?${remainingParams}&` : "?"}v=${videoId}`;
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!supabaseUrl) return appReturnUrl;
+  const fnUrl = new URL(`${supabaseUrl}/functions/v1/r/${videoId}`);
+  fnUrl.searchParams.set("app", `${origin}${path}`);
+  return fnUrl.toString();
 };
 
 interface Props {
