@@ -6,25 +6,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FollowButton } from "@/components/FollowButton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { buildShareUrl } from "@/lib/shareUrl";
+import { trackEvent } from "@/lib/analytics";
 
-const buildShareUrl = (videoId: string) => {
-  // Recipients get a link that goes through the OG edge function so social
-  // previews show the actual reel thumbnail/caption. The function then
-  // redirects them to the SPA at the current route + ?v=<id>, preserving
-  // the exact reel position.
-  const { origin, pathname, search } = window.location;
-  const params = new URLSearchParams(search);
-  params.delete("v"); // current ?v gets replaced below
-  const path = pathname === "/" ? "/" : pathname.replace(/\/$/, "");
-  const remainingParams = params.toString();
-  const appReturnUrl = `${origin}${path}${remainingParams ? `?${remainingParams}&` : "?"}v=${videoId}`;
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  if (!supabaseUrl) return appReturnUrl;
-  const fnUrl = new URL(`${supabaseUrl}/functions/v1/r/${videoId}`);
-  fnUrl.searchParams.set("app", `${origin}${path}`);
-  return fnUrl.toString();
-};
+const makeShareUrl = (videoId: string) =>
+  buildShareUrl({
+    videoId,
+    origin: window.location.origin,
+    pathname: window.location.pathname,
+    search: window.location.search,
+    supabaseUrl: import.meta.env.VITE_SUPABASE_URL as string | undefined,
+  });
 
 interface Props {
   video: FeedVideo;
