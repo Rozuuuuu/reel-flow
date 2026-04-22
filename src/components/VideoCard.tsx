@@ -1,10 +1,30 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Volume2, VolumeX, Play, Share2 } from "lucide-react";
+import { Heart, Volume2, VolumeX, Play, Share2, Copy, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FollowButton } from "@/components/FollowButton";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
+const buildShareUrl = (videoId: string) => {
+  // Recipients get a link that goes through the OG edge function so social
+  // previews show the actual reel thumbnail/caption. The function then
+  // redirects them to the SPA at the current route + ?v=<id>, preserving
+  // the exact reel position.
+  const { origin, pathname, search } = window.location;
+  const params = new URLSearchParams(search);
+  params.delete("v"); // current ?v gets replaced below
+  const path = pathname === "/" ? "/" : pathname.replace(/\/$/, "");
+  const remainingParams = params.toString();
+  const appReturnUrl = `${origin}${path}${remainingParams ? `?${remainingParams}&` : "?"}v=${videoId}`;
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!supabaseUrl) return appReturnUrl;
+  const fnUrl = new URL(`${supabaseUrl}/functions/v1/r/${videoId}`);
+  fnUrl.searchParams.set("app", `${origin}${path}`);
+  return fnUrl.toString();
+};
 
 interface Props {
   video: FeedVideo;
@@ -18,6 +38,8 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   const ref = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
+  const [shareFallback, setShareFallback] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -48,9 +70,11 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/?v=${video.id}`;
+    const url = buildShareUrl(video.id);
     const shareData = {
-      title: video.profile?.username ? `@${video.profile.username} on Reels` : "Check out this reel",
+      title: video.profile?.username
+        ? `@${video.profile.username} on Reelo`
+        : "Check out this reel",
       text: video.caption ?? "Check out this reel",
       url,
     };
@@ -65,8 +89,29 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
     try {
       await navigator.clipboard.writeText(url);
       toast.success("Link copied to clipboard");
+      return;
     } catch {
-      toast.error("Couldn't copy link");
+      // Clipboard blocked (permissions, insecure context, iframe, etc.)
+      // Surface a manual fallback panel with the link + a Copy button.
+      setCopied(false);
+      setShareFallback(url);
+    }
+  };
+
+  const copyFromFallback = async () => {
+    if (!shareFallback) return;
+    try {
+      await navigator.clipboard.writeText(shareFallback);
+      setCopied(true);
+      toast.success("Link copied");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Final fallback: select the input text so the user can copy manually
+      const input = document.getElementById(
+        `share-fallback-${video.id}`,
+      ) as HTMLInputElement | null;
+      input?.select();
+      toast.error("Couldn't copy automatically — text is selected, press ⌘/Ctrl+C");
     }
   };
 
@@ -180,6 +225,64 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
           </p>
         )}
       </div>
+
+      {/* Share fallback panel — shown only when navigator.share AND clipboard both fail */}
+      {shareFallback && (
+        <div
+          role="dialog"
+          aria-label="Copy share link"
+          className="absolute inset-0 z-20 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+          onClick={() => setShareFallback(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-t-2xl bg-card p-4 text-card-foreground shadow-glow sm:rounded-2xl"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Copy share link</h2>
+              <button
+                type="button"
+                onClick={() => setShareFallback(null)}
+                aria-label="Close"
+                className="rounded-md p-1 text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Your browser blocked automatic copying. Tap the button or copy the link manually.
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                id={`share-fallback-${video.id}`}
+                readOnly
+                value={shareFallback}
+                onFocus={(e) => e.currentTarget.select()}
+                className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-2 text-xs"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant={copied ? "secondary" : "brand"}
+                onClick={copyFromFallback}
+                className="shrink-0"
+              >
+                {copied ? (
+                  <>
+                    <Check className="mr-1 h-4 w-4" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-1 h-4 w-4" />
+                    Copy link
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

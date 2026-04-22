@@ -98,8 +98,10 @@ export type Database = {
         Row: {
           caption: string | null
           created_at: string
+          deleted_at: string | null
           hashtags: string[] | null
           id: string
+          is_private: boolean
           thumbnail_url: string | null
           user_id: string
           video_url: string
@@ -108,8 +110,10 @@ export type Database = {
         Insert: {
           caption?: string | null
           created_at?: string
+          deleted_at?: string | null
           hashtags?: string[] | null
           id?: string
+          is_private?: boolean
           thumbnail_url?: string | null
           user_id: string
           video_url: string
@@ -118,8 +122,10 @@ export type Database = {
         Update: {
           caption?: string | null
           created_at?: string
+          deleted_at?: string | null
           hashtags?: string[] | null
           id?: string
+          is_private?: boolean
           thumbnail_url?: string | null
           user_id?: string
           video_url?: string

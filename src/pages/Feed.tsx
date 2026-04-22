@@ -6,7 +6,7 @@ import { useFeedVideos, useVideoById, FeedVideo } from "@/hooks/useVideos";
 import { useMyFollowingIds } from "@/hooks/useFollows";
 import { VideoCard } from "@/components/VideoCard";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Film, UserPlus, AlertCircle } from "lucide-react";
+import { Loader2, Film, UserPlus, AlertCircle, Lock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,8 @@ export default function Feed() {
     !baseHasDeepLink ? deepLinkVideoId ?? undefined : undefined,
     user?.id
   );
+  const fallbackVideo = fallbackQuery.data?.video ?? null;
+  const fallbackStatus = fallbackQuery.data?.status;
 
   const list = useMemo(() => {
     let base = baseList;
@@ -42,17 +44,17 @@ export default function Feed() {
     if (
       deepLinkVideoId &&
       !baseHasDeepLink &&
-      fallbackQuery.data &&
-      !base.some((v) => v.id === fallbackQuery.data!.id)
+      fallbackVideo &&
+      !base.some((v) => v.id === fallbackVideo.id)
     ) {
-      base = [fallbackQuery.data, ...base];
+      base = [fallbackVideo, ...base];
     }
     if (tab === "following") {
       const ids = new Set(followingIds ?? []);
       return base.filter((v) => ids.has(v.user_id));
     }
     return base;
-  }, [baseList, tab, followingIds, deepLinkVideoId, baseHasDeepLink, fallbackQuery.data]);
+  }, [baseList, tab, followingIds, deepLinkVideoId, baseHasDeepLink, fallbackVideo]);
 
   // Detect which video is centered
   useEffect(() => {
@@ -109,7 +111,7 @@ export default function Feed() {
     if (tab !== "following") return;
     const inList = list.some((v) => v.id === deepLinkVideoId);
     const inBase = (videos ?? []).some((v) => v.id === deepLinkVideoId);
-    const inFallback = fallbackQuery.data?.id === deepLinkVideoId;
+    const inFallback = fallbackVideo?.id === deepLinkVideoId;
     if (!inList && (inBase || inFallback)) {
       setTab("for-you");
     }
@@ -237,13 +239,49 @@ export default function Feed() {
   }
 
   // Deep-link fallback UX state
-  const deepLinkMissing =
-    !!deepLinkVideoId &&
-    !baseHasDeepLink &&
-    !fallbackQuery.isLoading &&
-    (fallbackQuery.isError || fallbackQuery.data === null);
-  const deepLinkFetching =
-    !!deepLinkVideoId && !baseHasDeepLink && fallbackQuery.isLoading;
+  const deepLinkActive = !!deepLinkVideoId && !baseHasDeepLink;
+  const deepLinkFetching = deepLinkActive && fallbackQuery.isLoading;
+  const deepLinkErrored = deepLinkActive && fallbackQuery.isError;
+  // Distinct states once the lookup resolves with no playable video
+  const deepLinkState: "private" | "removed" | "not_found" | null =
+    deepLinkActive && !fallbackVideo && !fallbackQuery.isLoading
+      ? deepLinkErrored
+        ? "not_found"
+        : fallbackStatus === "private"
+          ? "private"
+          : fallbackStatus === "removed"
+            ? "removed"
+            : "not_found"
+      : null;
+
+  const stateCopy = {
+    private: {
+      Icon: Lock,
+      title: "This reel is private",
+      body: "The creator has set this reel to private. Only they can view it.",
+      retry: false,
+    },
+    removed: {
+      Icon: Trash2,
+      title: "This reel was removed",
+      body: "The creator deleted this reel. It's no longer available.",
+      retry: false,
+    },
+    not_found: {
+      Icon: AlertCircle,
+      title: deepLinkErrored ? "Couldn't load this reel" : "Reel not found",
+      body: deepLinkErrored
+        ? "We couldn't reach the server. Check your connection and try again."
+        : "This shared reel couldn't be found. The link may be wrong or the reel was removed.",
+      retry: true,
+    },
+  } as const;
+
+  const clearDeepLink = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("v");
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <div className="relative h-[100dvh] bg-black">
@@ -258,42 +296,46 @@ export default function Feed() {
         </div>
       )}
 
-      {deepLinkMissing && (
-        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex justify-center px-4">
-          <div
-            role="alert"
-            className="pointer-events-auto flex max-w-sm items-start gap-3 rounded-xl bg-black/70 px-4 py-3 text-sm text-white shadow-glow backdrop-blur-sm"
-          >
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div className="flex-1">
-              <p className="font-semibold">Reel unavailable</p>
-              <p className="mt-0.5 text-white/70">
-                This shared reel couldn't be found. It may have been removed.
-              </p>
-              <div className="mt-2 flex gap-2">
-                <Button
-                  size="sm"
-                  variant="brand"
-                  onClick={() => fallbackQuery.refetch()}
-                >
-                  Retry
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    const next = new URLSearchParams(searchParams);
-                    next.delete("v");
-                    setSearchParams(next, { replace: true });
-                  }}
-                >
-                  Go to feed
-                </Button>
+      {deepLinkState && (() => {
+        const { Icon, title, body, retry } = stateCopy[deepLinkState];
+        return (
+          <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex justify-center px-4">
+            <div
+              role="alert"
+              className="pointer-events-auto flex max-w-sm items-start gap-3 rounded-xl bg-black/70 px-4 py-3 text-sm text-white shadow-glow backdrop-blur-sm"
+            >
+              <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div className="flex-1">
+                <p className="font-semibold">{title}</p>
+                <p className="mt-0.5 text-white/70">{body}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {retry && (
+                    <Button
+                      size="sm"
+                      variant="brand"
+                      onClick={() => fallbackQuery.refetch()}
+                      disabled={fallbackQuery.isFetching}
+                    >
+                      {fallbackQuery.isFetching ? (
+                        <>
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          Retrying…
+                        </>
+                      ) : (
+                        "Try again"
+                      )}
+                    </Button>
+                  )}
+                  <Button size="sm" variant="secondary" onClick={clearDeepLink}>
+                    Go to feed
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
 
       <div
         ref={containerRef}
