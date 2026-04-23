@@ -41,6 +41,38 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_edits: {
+        Row: {
+          comment_id: string
+          edited_at: string
+          editor_id: string
+          id: string
+          previous_body: string
+        }
+        Insert: {
+          comment_id: string
+          edited_at?: string
+          editor_id: string
+          id?: string
+          previous_body: string
+        }
+        Update: {
+          comment_id?: string
+          edited_at?: string
+          editor_id?: string
+          id?: string
+          previous_body?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_edits_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_reports: {
         Row: {
           comment_id: string
@@ -210,6 +242,57 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          comment_id: string | null
+          created_at: string
+          data: Json
+          id: string
+          read_at: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          comment_id?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -237,6 +320,36 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -317,6 +430,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       follow_request_status: "pending" | "accepted" | "declined"
+      notification_type: "comment_reply" | "follow_request" | "follow_accepted"
       report_status: "pending" | "reviewed" | "dismissed"
     }
     CompositeTypes: {
@@ -447,6 +561,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       follow_request_status: ["pending", "accepted", "declined"],
+      notification_type: ["comment_reply", "follow_request", "follow_accepted"],
       report_status: ["pending", "reviewed", "dismissed"],
     },
   },
