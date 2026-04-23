@@ -320,6 +320,7 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
           </div>
         </div>
       )}
+      </div>
 
       <CommentsSheet
         videoId={video.id}
