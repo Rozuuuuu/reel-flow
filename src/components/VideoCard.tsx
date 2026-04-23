@@ -135,7 +135,8 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   };
 
   return (
-    <section className="relative h-[100dvh] w-full snap-start snap-always bg-black">
+    <section className="relative h-[100dvh] w-full snap-start snap-always bg-black md:flex md:items-center md:justify-center">
+      <div className="relative h-full w-full md:aspect-[9/16] md:h-[min(100dvh,900px)] md:w-auto md:overflow-hidden md:rounded-2xl md:shadow-sog">
       <video
         ref={ref}
         src={video.video_url}
