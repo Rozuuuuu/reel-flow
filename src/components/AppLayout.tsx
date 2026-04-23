@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { BottomNav } from "./BottomNav";
+import { BottomNav, SideNav } from "./BottomNav";
 
 export const AppLayout = () => {
   const { pathname } = useLocation();
@@ -7,7 +7,14 @@ export const AppLayout = () => {
   const isFeed = pathname === "/";
   return (
     <div className="min-h-screen bg-background">
-      <main className={isFeed ? "" : "pb-24"}>
+      <SideNav />
+      <main
+        className={
+          isFeed
+            ? "md:pl-20 lg:pl-56"
+            : "pb-24 md:pb-6 md:pl-20 lg:pl-56"
+        }
+      >
         <Outlet />
       </main>
       <BottomNav />
