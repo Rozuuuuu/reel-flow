@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Volume2, VolumeX, Play, Share2, Copy, Check, X } from "lucide-react";
+import { Heart, Volume2, VolumeX, Play, Share2, Copy, Check, X, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { buildShareUrl } from "@/lib/shareUrl";
 import { trackEvent } from "@/lib/analytics";
+import { CommentsSheet } from "@/components/CommentsSheet";
+import { useCommentCount } from "@/hooks/useComments";
 
 const makeShareUrl = (videoId: string) =>
   buildShareUrl({
@@ -32,6 +34,8 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   const [showHeart, setShowHeart] = useState(false);
   const [shareFallback, setShareFallback] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const { data: commentCount } = useCommentCount(video.id);
 
   useEffect(() => {
     const el = ref.current;
@@ -131,7 +135,8 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   };
 
   return (
-    <section className="relative h-[100dvh] w-full snap-start snap-always bg-black">
+    <section className="relative h-[100dvh] w-full snap-start snap-always bg-black md:flex md:items-center md:justify-center">
+      <div className="relative h-full w-full md:aspect-[9/16] md:h-[min(100dvh,900px)] md:w-auto md:overflow-hidden md:rounded-2xl md:shadow-sog">
       <video
         ref={ref}
         src={video.video_url}
@@ -199,6 +204,23 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
           </div>
           <span className="text-xs font-semibold drop-shadow">
             {video.likes_count}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setCommentsOpen(true);
+            void trackEvent("comment_open", { props: { video_id: video.id } });
+          }}
+          aria-label="Comments"
+          className="flex flex-col items-center gap-1 text-white"
+        >
+          <div className="rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90">
+            <MessageCircle className="h-7 w-7 text-white" />
+          </div>
+          <span className="text-xs font-semibold drop-shadow">
+            {commentCount ?? 0}
           </span>
         </button>
 
@@ -298,6 +320,13 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
           </div>
         </div>
       )}
+      </div>
+
+      <CommentsSheet
+        videoId={video.id}
+        open={commentsOpen}
+        onOpenChange={setCommentsOpen}
+      />
     </section>
   );
 };

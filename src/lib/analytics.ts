@@ -14,7 +14,9 @@ export type AnalyticsEventName =
   | "share_fallback_copy_failed"
   | "deep_link_opened"
   | "deep_link_state_shown"
-  | "follow_request_sent";
+  | "follow_request_sent"
+  | "comment_open"
+  | "comment_create";
 
 const SESSION_KEY = "reelo:session-id";
 
