@@ -319,6 +319,12 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
           </div>
         </div>
       )}
+
+      <CommentsSheet
+        videoId={video.id}
+        open={commentsOpen}
+        onOpenChange={setCommentsOpen}
+      />
     </section>
   );
 };
