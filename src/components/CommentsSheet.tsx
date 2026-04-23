@@ -78,7 +78,7 @@ export const CommentsSheet = ({ videoId, open, onOpenChange }: Props) => {
 
   const addMutation = useAddComment(videoId);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLLIElement>(null);
 
   // Infinite scroll sentinel
   useEffect(() => {
