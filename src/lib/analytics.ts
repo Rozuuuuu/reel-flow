@@ -16,7 +16,10 @@ export type AnalyticsEventName =
   | "deep_link_state_shown"
   | "follow_request_sent"
   | "comment_open"
-  | "comment_create";
+  | "comment_create"
+  | "comment_report"
+  | "comment_edit"
+  | "comment_hide";
 
 const SESSION_KEY = "reelo:session-id";
 
