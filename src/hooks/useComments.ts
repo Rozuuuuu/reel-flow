@@ -47,7 +47,7 @@ export const useTopLevelComments = (videoId: string | undefined) => {
     queryKey: topLevelKey(videoId ?? ""),
     enabled: !!videoId,
     initialPageParam: 0 as number,
-    getNextPageParam: (lastPage, allPages) =>
+    getNextPageParam: (lastPage: Comment[], allPages: Comment[][]) =>
       lastPage.length < PAGE_SIZE ? undefined : allPages.length,
     queryFn: async ({ pageParam }): Promise<Comment[]> => {
       const from = (pageParam as number) * PAGE_SIZE;
