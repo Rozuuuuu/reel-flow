@@ -120,10 +120,15 @@ export const useMarkAllNotificationsRead = (userId: string | undefined) => {
 /** Realtime — keep notification list + unread count fresh. */
 export const useNotificationsRealtime = (userId: string | undefined) => {
   const qc = useQueryClient();
+  const channelIdRef = useRef<string>(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2),
+  );
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
-      .channel(`notifications:${userId}:${Math.random().toString(36).slice(2)}`)
+      .channel(`notifications:${userId}:${channelIdRef.current}`)
       .on(
         "postgres_changes",
         {
@@ -139,7 +144,12 @@ export const useNotificationsRealtime = (userId: string | undefined) => {
       )
       .subscribe();
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        void channel.unsubscribe();
+      } catch {
+        /* ignore */
+      }
+      void supabase.removeChannel(channel);
     };
   }, [userId, qc]);
 };
