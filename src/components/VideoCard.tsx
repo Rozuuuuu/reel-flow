@@ -153,12 +153,12 @@ export const VideoCard = ({
 
   return (
     <section className="relative h-[100dvh] w-full snap-start snap-always bg-black md:flex md:items-center md:justify-center">
-      <div className="relative h-full w-full md:aspect-[9/16] md:h-[min(100dvh,900px)] md:w-auto md:overflow-hidden md:rounded-2xl md:shadow-sog">
+      <div className="relative mx-auto h-full w-full max-w-[min(100vw,calc(100dvh*9/16))] md:aspect-[9/16] md:h-[min(100dvh,900px)] md:w-auto md:max-w-none md:overflow-hidden md:rounded-2xl md:shadow-sog">
       <video
         ref={ref}
         src={video.video_url}
         poster={video.thumbnail_url ?? undefined}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-contain md:object-cover"
         loop
         playsInline
         muted={muted}
