@@ -19,7 +19,14 @@ export type AnalyticsEventName =
   | "comment_create"
   | "comment_report"
   | "comment_edit"
-  | "comment_hide";
+  | "comment_hide"
+  | "comment_deep_link"
+  | "comment_history_view"
+  | "notification_open"
+  | "notification_click"
+  | "push_subscribe"
+  | "push_unsubscribe"
+  | "mod_bulk_action";
 
 const SESSION_KEY = "reelo:session-id";
 

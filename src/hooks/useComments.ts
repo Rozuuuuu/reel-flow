@@ -23,12 +23,22 @@ export interface Comment {
   } | null;
 }
 
+export interface CommentEdit {
+  id: string;
+  comment_id: string;
+  editor_id: string;
+  previous_body: string;
+  edited_at: string;
+}
+
 const PAGE_SIZE = 20;
 
 const topLevelKey = (videoId: string) => ["comments", videoId, "top"];
 const repliesKey = (parentId: string) => ["comments-replies", parentId];
 const countKey = (videoId: string) => ["comments-count", videoId];
 const replyCountKey = (parentId: string) => ["comments-reply-count", parentId];
+const editsKey = (commentId: string) => ["comment-edits", commentId];
+const commentByIdKey = (commentId: string) => ["comment-by-id", commentId];
 
 const attachProfiles = async (rows: Comment[]): Promise<Comment[]> => {
   if (rows.length === 0) return [];
@@ -111,6 +121,42 @@ export const useCommentCount = (videoId: string | undefined) => {
   });
 };
 
+/** Look up a single comment by id (used for deep-linking to a specific comment). */
+export const useCommentById = (commentId: string | undefined | null) => {
+  return useQuery({
+    queryKey: commentByIdKey(commentId ?? ""),
+    enabled: !!commentId,
+    queryFn: async (): Promise<Comment | null> => {
+      const { data, error } = await supabase
+        .from("comments")
+        .select("*")
+        .eq("id", commentId!)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const [withProfile] = await attachProfiles([data as Comment]);
+      return withProfile ?? null;
+    },
+  });
+};
+
+/** Inline edit history for a single comment (newest revisions first). */
+export const useCommentEdits = (commentId: string | undefined, enabled: boolean) => {
+  return useQuery({
+    queryKey: editsKey(commentId ?? ""),
+    enabled: !!commentId && enabled,
+    queryFn: async (): Promise<CommentEdit[]> => {
+      const { data, error } = await supabase
+        .from("comment_edits")
+        .select("*")
+        .eq("comment_id", commentId!)
+        .order("edited_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as CommentEdit[];
+    },
+  });
+};
+
 export const useAddComment = (videoId: string) => {
   const qc = useQueryClient();
   return useMutation({
@@ -138,10 +184,19 @@ export const useAddComment = (videoId: string) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, vars) => {
+    onSuccess: (created, vars) => {
       if (vars.parentId) {
         qc.invalidateQueries({ queryKey: repliesKey(vars.parentId) });
         qc.invalidateQueries({ queryKey: replyCountKey(vars.parentId) });
+        // Best-effort: trigger Web Push delivery for the in-app notification
+        // the DB trigger just created. Silently no-ops if VAPID isn't configured.
+        if (created?.id) {
+          void supabase.functions
+            .invoke("send-push", { body: { userId: vars.userId } })
+            .catch(() => {
+              /* analytics-only failure path */
+            });
+        }
       } else {
         qc.invalidateQueries({ queryKey: topLevelKey(videoId) });
       }
@@ -153,9 +208,33 @@ export const useAddComment = (videoId: string) => {
 export const useUpdateComment = (videoId: string) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, body }: { id: string; body: string }) => {
+    mutationFn: async ({
+      id,
+      body,
+      previousBody,
+      editorId,
+    }: {
+      id: string;
+      body: string;
+      previousBody: string;
+      editorId: string;
+    }) => {
       const trimmed = body.trim();
       if (!trimmed) throw new Error("Comment is empty");
+      // 1. Snapshot the prior body to history (best-effort; never blocks the edit).
+      if (previousBody && previousBody !== trimmed) {
+        const { error: historyError } = await supabase
+          .from("comment_edits")
+          .insert({
+            comment_id: id,
+            editor_id: editorId,
+            previous_body: previousBody,
+          });
+        if (historyError && import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn("[comments] failed to record edit history:", historyError.message);
+        }
+      }
       const { data, error } = await supabase
         .from("comments")
         .update({ body: trimmed })
@@ -165,9 +244,11 @@ export const useUpdateComment = (videoId: string) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, _vars) => {
+    onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: topLevelKey(videoId) });
       qc.invalidateQueries({ queryKey: ["comments-replies"] });
+      qc.invalidateQueries({ queryKey: editsKey(vars.id) });
+      qc.invalidateQueries({ queryKey: commentByIdKey(vars.id) });
     },
   });
 };

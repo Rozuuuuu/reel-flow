@@ -14,7 +14,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Film, LogOut, Pencil, Loader2, Trash2, Inbox, Check, X } from "lucide-react";
+import { Film, LogOut, Pencil, Loader2, Trash2, Inbox, Check, X, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useIsModerator } from "@/hooks/useComments";
 import { z } from "zod";
 
 const displayNameSchema = z.string().trim().min(1).max(50);
@@ -27,6 +29,7 @@ export default function Profile() {
   const { data: videos } = useMyVideos(user?.id);
   const { data: incoming } = useMyIncomingRequests(user?.id);
   const respond = useRespondToFollowRequest(user?.id);
+  const { data: isMod } = useIsModerator(user?.id);
 
   const [editOpen, setEditOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -176,6 +179,20 @@ export default function Profile() {
             Sign out
           </Button>
         </div>
+
+        {isMod && (
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="mt-3"
+          >
+            <Link to="/admin/reports">
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Moderate reports
+            </Link>
+          </Button>
+        )}
       </header>
 
       {incoming && incoming.length > 0 && (

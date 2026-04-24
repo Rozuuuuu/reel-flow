@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { Home, PlusSquare, User, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 const items = [
   { to: "/", label: "Feed", icon: Home },
@@ -40,6 +41,13 @@ export const BottomNav = () => {
           </li>
         ))}
       </ul>
+
+      {/* Floating bell — keeps the bottom nav uncrowded on small screens. */}
+      <div className="absolute -top-12 right-3">
+        <div className="rounded-full bg-card/90 p-1 shadow-md backdrop-blur">
+          <NotificationsBell />
+        </div>
+      </div>
     </nav>
   );
 };
@@ -86,6 +94,9 @@ export const SideNav = () => {
             </NavLink>
           </li>
         ))}
+        <li className="mt-1 flex items-center justify-center lg:justify-start">
+          <NotificationsBell />
+        </li>
       </ul>
     </aside>
   );

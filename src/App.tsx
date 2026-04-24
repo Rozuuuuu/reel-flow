@@ -13,6 +13,7 @@ import Search from "./pages/Search.tsx";
 import Upload from "./pages/Upload.tsx";
 import Profile from "./pages/Profile.tsx";
 import UserProfile from "./pages/UserProfile.tsx";
+import AdminReports from "./pages/AdminReports.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/upload" element={<Upload />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/u/:username" element={<UserProfile />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

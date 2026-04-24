@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       videoId = data.id;
     }
 
-    if (!isUuid(videoId)) {
+    if (!videoId || !isUuid(videoId)) {
       return new Response(
         JSON.stringify({ ok: false, errors: ["videoId is not a valid UUID"] }),
         {

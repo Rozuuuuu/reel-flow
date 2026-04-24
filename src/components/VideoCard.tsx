@@ -26,9 +26,21 @@ interface Props {
   muted: boolean;
   onToggleMute: () => void;
   onToggleLike: () => void;
+  /** Optional comment id to focus inside the comments sheet (`?c=<id>` deep link). */
+  focusCommentId?: string | null;
+  /** Called when the focus action has been consumed (parent should clear ?c). */
+  onFocusCommentConsumed?: () => void;
 }
 
-export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: Props) => {
+export const VideoCard = ({
+  video,
+  active,
+  muted,
+  onToggleMute,
+  onToggleLike,
+  focusCommentId,
+  onFocusCommentConsumed,
+}: Props) => {
   const ref = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
@@ -36,6 +48,11 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
   const [copied, setCopied] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const { data: commentCount } = useCommentCount(video.id);
+
+  // Auto-open the comments sheet when a `?c=<id>` deep link points at this video.
+  useEffect(() => {
+    if (active && focusCommentId) setCommentsOpen(true);
+  }, [active, focusCommentId]);
 
   useEffect(() => {
     const el = ref.current;
@@ -326,6 +343,8 @@ export const VideoCard = ({ video, active, muted, onToggleMute, onToggleLike }: 
         videoId={video.id}
         open={commentsOpen}
         onOpenChange={setCommentsOpen}
+        focusCommentId={focusCommentId ?? null}
+        onFocusConsumed={onFocusCommentConsumed}
       />
     </section>
   );
