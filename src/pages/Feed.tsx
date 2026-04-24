@@ -19,6 +19,7 @@ export default function Feed() {
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const deepLinkVideoId = searchParams.get("v");
+  const deepLinkCommentId = searchParams.get("c");
   const { data: videos, isLoading } = useFeedVideos(user?.id);
   const { data: followingIds } = useMyFollowingIds(user?.id);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -301,6 +302,16 @@ export default function Feed() {
               muted={muted}
               onToggleMute={() => setMuted((m) => !m)}
               onToggleLike={() => handleToggleLike(v)}
+              focusCommentId={
+                deepLinkCommentId && v.id === deepLinkVideoId
+                  ? deepLinkCommentId
+                  : null
+              }
+              onFocusCommentConsumed={() => {
+                const next = new URLSearchParams(searchParams);
+                next.delete("c");
+                setSearchParams(next, { replace: true });
+              }}
             />
           </div>
         ))}
