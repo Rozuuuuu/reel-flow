@@ -184,10 +184,19 @@ export const useAddComment = (videoId: string) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, vars) => {
+    onSuccess: (created, vars) => {
       if (vars.parentId) {
         qc.invalidateQueries({ queryKey: repliesKey(vars.parentId) });
         qc.invalidateQueries({ queryKey: replyCountKey(vars.parentId) });
+        // Best-effort: trigger Web Push delivery for the in-app notification
+        // the DB trigger just created. Silently no-ops if VAPID isn't configured.
+        if (created?.id) {
+          void supabase.functions
+            .invoke("send-push", { body: { userId: vars.userId } })
+            .catch(() => {
+              /* analytics-only failure path */
+            });
+        }
       } else {
         qc.invalidateQueries({ queryKey: topLevelKey(videoId) });
       }
