@@ -3,13 +3,14 @@ import { trackEvent } from "@/lib/analytics";
 
 const SW_PATH = "/sw.js";
 
-const urlB64ToUint8Array = (base64: string): Uint8Array => {
+const urlB64ToUint8Array = (base64: string): ArrayBuffer => {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(b64);
-  const out = new Uint8Array(raw.length);
+  const buf = new ArrayBuffer(raw.length);
+  const out = new Uint8Array(buf);
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-  return out;
+  return buf;
 };
 
 export const pushSupported = (): boolean =>
