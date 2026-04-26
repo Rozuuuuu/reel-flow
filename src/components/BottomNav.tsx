@@ -10,6 +10,24 @@ const items = [
   { to: "/profile", label: "Profile", icon: User },
 ];
 
+/** Top notification bar — visible on mobile only. */
+export const TopBar = () => {
+  return (
+    <header
+      aria-label="Notifications"
+      className="fixed top-0 left-0 right-0 z-50 glass border-b border-border md:hidden"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
+      <div className="mx-auto flex max-w-md items-center justify-between px-4 py-2">
+        <span className="text-gradient-brand text-lg font-bold tracking-tight">
+          Reelo
+        </span>
+        <NotificationsBell />
+      </div>
+    </header>
+  );
+};
+
 /** Bottom tab bar — visible on mobile only. */
 export const BottomNav = () => {
   return (
@@ -41,13 +59,6 @@ export const BottomNav = () => {
           </li>
         ))}
       </ul>
-
-      {/* Floating bell — keeps the bottom nav uncrowded on small screens. */}
-      <div className="absolute -top-12 right-3">
-        <div className="rounded-full bg-card/90 p-1 shadow-md backdrop-blur">
-          <NotificationsBell />
-        </div>
-      </div>
     </nav>
   );
 };
