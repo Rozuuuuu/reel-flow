@@ -28,12 +28,16 @@ const App = () => (
           <DeepLinkRedirector />
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
+            {/* Public routes — guests can browse the feed, search, and view profiles */}
+            <Route element={<AppLayout />}>
               <Route path="/" element={<Feed />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/u/:username" element={<UserProfile />} />
+            </Route>
+            {/* Member-only routes */}
+            <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
               <Route path="/upload" element={<Upload />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/u/:username" element={<UserProfile />} />
               <Route path="/admin/reports" element={<AdminReports />} />
             </Route>
             <Route path="*" element={<NotFound />} />

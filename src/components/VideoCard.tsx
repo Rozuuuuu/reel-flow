@@ -10,6 +10,7 @@ import { buildShareUrl } from "@/lib/shareUrl";
 import { trackEvent } from "@/lib/analytics";
 import { CommentsSheet } from "@/components/CommentsSheet";
 import { useCommentCount } from "@/hooks/useComments";
+import { useAuthGate } from "@/hooks/useAuthGate";
 
 const makeShareUrl = (videoId: string) =>
   buildShareUrl({
@@ -48,6 +49,7 @@ const VideoCardImpl = ({
   const [copied, setCopied] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const { data: commentCount } = useCommentCount(video.id);
+  const { requireAuth, gate } = useAuthGate();
 
   // Auto-open the comments sheet when a `?c=<id>` deep link points at this video.
   useEffect(() => {
@@ -203,7 +205,7 @@ const VideoCardImpl = ({
       <div className="absolute bottom-32 right-3 z-10 flex flex-col items-center gap-5">
         <button
           type="button"
-          onClick={onToggleLike}
+          onClick={() => requireAuth("like this reel", onToggleLike)}
           aria-label={video.liked_by_me ? "Unlike" : "Like"}
           className="flex flex-col items-center gap-1 text-white"
         >
@@ -227,10 +229,12 @@ const VideoCardImpl = ({
 
         <button
           type="button"
-          onClick={() => {
-            setCommentsOpen(true);
-            void trackEvent("comment_open", { props: { video_id: video.id } });
-          }}
+          onClick={() =>
+            requireAuth("join the conversation", () => {
+              setCommentsOpen(true);
+              void trackEvent("comment_open", { props: { video_id: video.id } });
+            })
+          }
           aria-label="Comments"
           className="flex flex-col items-center gap-1 text-white"
         >
@@ -347,6 +351,7 @@ const VideoCardImpl = ({
         focusCommentId={focusCommentId ?? null}
         onFocusConsumed={onFocusCommentConsumed}
       />
+      {gate}
     </section>
   );
 };
