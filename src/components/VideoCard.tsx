@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Heart, Volume2, VolumeX, Play, Share2, Copy, Check, X, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
@@ -32,7 +32,7 @@ interface Props {
   onFocusCommentConsumed?: () => void;
 }
 
-export const VideoCard = ({
+const VideoCardImpl = ({
   video,
   active,
   muted,
@@ -65,7 +65,7 @@ export const VideoCard = ({
     }
   }, [active]);
 
-  const handleTap = () => {
+  const handleTap = useCallback(() => {
     const el = ref.current;
     if (!el) return;
     if (el.paused) {
@@ -74,13 +74,13 @@ export const VideoCard = ({
       el.pause();
       setPaused(true);
     }
-  };
+  }, []);
 
-  const handleDoubleTap = () => {
+  const handleDoubleTap = useCallback(() => {
     if (!video.liked_by_me) onToggleLike();
     setShowHeart(true);
     setTimeout(() => setShowHeart(false), 600);
-  };
+  }, [video.liked_by_me, onToggleLike]);
 
   const handleShare = async () => {
     const { shareUrl, usesEdgeFunction } = makeShareUrl(video.id);
@@ -349,3 +349,6 @@ export const VideoCard = ({
     </section>
   );
 };
+
+export const VideoCard = memo(VideoCardImpl);
+
