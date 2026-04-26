@@ -351,6 +351,7 @@ const VideoCardImpl = ({
         focusCommentId={focusCommentId ?? null}
         onFocusConsumed={onFocusCommentConsumed}
       />
+      {gate}
     </section>
   );
 };
