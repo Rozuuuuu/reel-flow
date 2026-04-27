@@ -316,10 +316,10 @@ const VideoCardImpl = ({
           aria-label="Share"
           className="flex flex-col items-center gap-1 text-white"
         >
-          <div className="rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90">
-            <Share2 className="h-7 w-7 text-white" />
+          <div className="rounded-full bg-black/30 p-2 backdrop-blur-sm transition active:scale-90 sm:p-2.5 md:p-3">
+            <Share2 className="h-5 w-5 text-white sm:h-6 sm:w-6 md:h-7 md:w-7" />
           </div>
-          <span className="text-xs font-semibold drop-shadow">Share</span>
+          <span className="text-[11px] font-semibold drop-shadow sm:text-xs">Share</span>
         </button>
       </div>
 
