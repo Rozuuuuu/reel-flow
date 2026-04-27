@@ -50,7 +50,29 @@ const VideoCardImpl = ({
   const [copied, setCopied] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const { data: commentCount } = useCommentCount(video.id);
-  const { requireAuth, gate } = useAuthGate();
+  const { requireAuth, gate, isGuest } = useAuthGate();
+  const { isSaved: isGuestSaved, toggle: toggleGuestSave } = useGuestSaves();
+  const saved = isGuest ? isGuestSaved(video.id) : false;
+
+  const handleSave = useCallback(() => {
+    if (isGuest) {
+      const nowSaved = toggleGuestSave(video.id);
+      toast.success(
+        nowSaved
+          ? "Saved to your device. Sign in to keep them forever."
+          : "Removed from saved",
+      );
+      void trackEvent("guest_save_toggle", {
+        props: { video_id: video.id, saved: nowSaved },
+      });
+      return;
+    }
+    // Signed-in persistent saves not yet wired to a server table — gate it
+    // so the auth prompt doubles as a "coming soon / sign-in required" cue.
+    requireAuth("save reels to your library", () => {
+      toast.info("Saved library is coming soon");
+    });
+  }, [isGuest, toggleGuestSave, video.id, requireAuth]);
 
   // Auto-open the comments sheet when a `?c=<id>` deep link points at this video.
   useEffect(() => {
