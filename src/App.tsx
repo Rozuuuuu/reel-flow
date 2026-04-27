@@ -15,6 +15,7 @@ import Profile from "./pages/Profile.tsx";
 import UserProfile from "./pages/UserProfile.tsx";
 import AdminReports from "./pages/AdminReports.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Saved from "./pages/Saved.tsx";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/" element={<Feed />} />
               <Route path="/search" element={<Search />} />
               <Route path="/u/:username" element={<UserProfile />} />
+              <Route path="/saved" element={<Saved />} />
             </Route>
             {/* Member-only routes */}
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
