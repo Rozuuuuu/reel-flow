@@ -187,3 +187,70 @@ export const useMyProfile = (userId: string | undefined) => {
     },
   });
 };
+
+/**
+ * Fetch a set of videos by id (used for the guest "Saved" list).
+ * Returns them in the same order as the input ids; missing/private videos are skipped.
+ */
+export const useVideosByIds = (
+  ids: string[],
+  currentUserId: string | undefined,
+) => {
+  const key = ids.join(",");
+  return useQuery({
+    queryKey: ["videos-by-ids", key, currentUserId ?? "anon"],
+    enabled: ids.length > 0,
+    queryFn: async (): Promise<FeedVideo[]> => {
+      const { data: videos, error } = await supabase
+        .from("videos")
+        .select("*")
+        .in("id", ids);
+      if (error) throw error;
+      if (!videos || videos.length === 0) return [];
+
+      const userIds = Array.from(new Set(videos.map((v) => v.user_id)));
+      const videoIds = videos.map((v) => v.id);
+
+      const [profilesRes, likesRes, myLikesRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, username, display_name, avatar_url")
+          .in("id", userIds),
+        supabase.from("likes").select("video_id").in("video_id", videoIds),
+        currentUserId
+          ? supabase
+              .from("likes")
+              .select("video_id")
+              .eq("user_id", currentUserId)
+              .in("video_id", videoIds)
+          : Promise.resolve({ data: [] as { video_id: string }[], error: null }),
+      ]);
+
+      const profileById = new Map(
+        (profilesRes.data ?? []).map((p) => [p.id, p]),
+      );
+      const likeCountByVideo = new Map<string, number>();
+      (likesRes.data ?? []).forEach((l) => {
+        likeCountByVideo.set(
+          l.video_id,
+          (likeCountByVideo.get(l.video_id) ?? 0) + 1,
+        );
+      });
+      const myLikedSet = new Set(
+        (myLikesRes.data ?? []).map((l) => l.video_id),
+      );
+
+      const enriched = videos.map((v) => ({
+        ...v,
+        hashtags: v.hashtags ?? [],
+        profile: profileById.get(v.user_id) ?? null,
+        likes_count: likeCountByVideo.get(v.id) ?? 0,
+        liked_by_me: myLikedSet.has(v.id),
+      }));
+
+      // Preserve input ordering (most-recently-saved first).
+      const byId = new Map(enriched.map((v) => [v.id, v]));
+      return ids.map((id) => byId.get(id)).filter(Boolean) as FeedVideo[];
+    },
+  });
+};
