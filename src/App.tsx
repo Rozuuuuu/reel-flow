@@ -34,6 +34,7 @@ const App = () => (
               <Route path="/" element={<Feed />} />
               <Route path="/search" element={<Search />} />
               <Route path="/u/:username" element={<UserProfile />} />
+              <Route path="/saved" element={<Saved />} />
             </Route>
             {/* Member-only routes */}
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
