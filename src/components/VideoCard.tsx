@@ -63,15 +63,14 @@ const VideoCardImpl = ({
           : "Removed from saved",
         {
           description: nowSaved
-            ? "Sign in to keep your saves across devices."
+            ? "Open Saved to view them anytime."
             : undefined,
           action: nowSaved
             ? {
-                label: "Sign in",
-                onClick: () =>
-                  requireAuth("view your saved reels", () => {
-                    /* signed in — server-backed list TBD */
-                  }),
+                label: "View saved",
+                onClick: () => {
+                  window.location.assign("/saved");
+                },
               }
             : undefined,
         },
