@@ -230,14 +230,18 @@ const VideoCardImpl = ({
         type="button"
         onClick={onToggleMute}
         aria-label={muted ? "Unmute" : "Mute"}
-        className="absolute right-4 top-16 z-10 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition hover:bg-black/60 md:top-4"
+        className="absolute right-3 top-16 z-10 rounded-full bg-black/40 p-1.5 text-white backdrop-blur-sm transition hover:bg-black/60 sm:right-4 sm:p-2 md:top-4"
         style={{ marginTop: "env(safe-area-inset-top)" }}
       >
-        {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        {muted ? (
+          <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" />
+        ) : (
+          <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />
+        )}
       </button>
 
-      {/* Right action rail */}
-      <div className="absolute bottom-32 right-3 z-10 flex flex-col items-center gap-5">
+      {/* Right action rail — sizes scale with viewport for consistent touch targets */}
+      <div className="absolute bottom-28 right-2 z-10 flex flex-col items-center gap-3 sm:bottom-32 sm:right-3 sm:gap-4 md:gap-5">
         <button
           type="button"
           onClick={() => requireAuth("like this reel", onToggleLike)}
@@ -246,18 +250,18 @@ const VideoCardImpl = ({
         >
           <div
             className={cn(
-              "rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90",
+              "rounded-full bg-black/30 p-2 backdrop-blur-sm transition active:scale-90 sm:p-2.5 md:p-3",
               video.liked_by_me && "bg-primary/20"
             )}
           >
             <Heart
               className={cn(
-                "h-7 w-7 transition",
+                "h-5 w-5 transition sm:h-6 sm:w-6 md:h-7 md:w-7",
                 video.liked_by_me ? "fill-primary text-primary" : "text-white"
               )}
             />
           </div>
-          <span className="text-xs font-semibold drop-shadow">
+          <span className="text-[11px] font-semibold drop-shadow sm:text-xs">
             {video.likes_count}
           </span>
         </button>
@@ -273,10 +277,10 @@ const VideoCardImpl = ({
           aria-label="Comments"
           className="flex flex-col items-center gap-1 text-white"
         >
-          <div className="rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90">
-            <MessageCircle className="h-7 w-7 text-white" />
+          <div className="rounded-full bg-black/30 p-2 backdrop-blur-sm transition active:scale-90 sm:p-2.5 md:p-3">
+            <MessageCircle className="h-5 w-5 text-white sm:h-6 sm:w-6 md:h-7 md:w-7" />
           </div>
-          <span className="text-xs font-semibold drop-shadow">
+          <span className="text-[11px] font-semibold drop-shadow sm:text-xs">
             {commentCount ?? 0}
           </span>
         </button>
@@ -290,18 +294,18 @@ const VideoCardImpl = ({
         >
           <div
             className={cn(
-              "rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90",
+              "rounded-full bg-black/30 p-2 backdrop-blur-sm transition active:scale-90 sm:p-2.5 md:p-3",
               saved && "bg-primary/20",
             )}
           >
             <Bookmark
               className={cn(
-                "h-7 w-7 transition",
+                "h-5 w-5 transition sm:h-6 sm:w-6 md:h-7 md:w-7",
                 saved ? "fill-primary text-primary" : "text-white",
               )}
             />
           </div>
-          <span className="text-xs font-semibold drop-shadow">
+          <span className="text-[11px] font-semibold drop-shadow sm:text-xs">
             {saved ? "Saved" : "Save"}
           </span>
         </button>
