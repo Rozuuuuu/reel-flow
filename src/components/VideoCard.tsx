@@ -271,6 +271,31 @@ const VideoCardImpl = ({
 
         <button
           type="button"
+          onClick={handleSave}
+          aria-label={saved ? "Remove from saved" : "Save"}
+          aria-pressed={saved}
+          className="flex flex-col items-center gap-1 text-white"
+        >
+          <div
+            className={cn(
+              "rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90",
+              saved && "bg-primary/20",
+            )}
+          >
+            <Bookmark
+              className={cn(
+                "h-7 w-7 transition",
+                saved ? "fill-primary text-primary" : "text-white",
+              )}
+            />
+          </div>
+          <span className="text-xs font-semibold drop-shadow">
+            {saved ? "Saved" : "Save"}
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={handleShare}
           aria-label="Share"
           className="flex flex-col items-center gap-1 text-white"
