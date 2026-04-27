@@ -59,16 +59,28 @@ const VideoCardImpl = ({
       const nowSaved = toggleGuestSave(video.id);
       toast.success(
         nowSaved
-          ? "Saved to your device. Sign in to keep them forever."
+          ? "Saved on this device"
           : "Removed from saved",
+        {
+          description: nowSaved
+            ? "Sign in to keep your saves across devices."
+            : undefined,
+          action: nowSaved
+            ? {
+                label: "Sign in",
+                onClick: () =>
+                  requireAuth("view your saved reels", () => {
+                    /* signed in — server-backed list TBD */
+                  }),
+              }
+            : undefined,
+        },
       );
       void trackEvent("guest_save_toggle", {
         props: { video_id: video.id, saved: nowSaved },
       });
       return;
     }
-    // Signed-in persistent saves not yet wired to a server table — gate it
-    // so the auth prompt doubles as a "coming soon / sign-in required" cue.
     requireAuth("save reels to your library", () => {
       toast.info("Saved library is coming soon");
     });
