@@ -26,7 +26,8 @@ export type AnalyticsEventName =
   | "notification_click"
   | "push_subscribe"
   | "push_unsubscribe"
-  | "mod_bulk_action";
+  | "mod_bulk_action"
+  | "guest_save_toggle";
 
 const SESSION_KEY = "reelo:session-id";
 

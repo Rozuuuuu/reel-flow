@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Heart, Volume2, VolumeX, Play, Share2, Copy, Check, X, MessageCircle } from "lucide-react";
+import { Heart, Volume2, VolumeX, Play, Share2, Copy, Check, X, MessageCircle, Bookmark } from "lucide-react";
+import { useGuestSaves } from "@/hooks/useGuestSaves";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,7 +50,41 @@ const VideoCardImpl = ({
   const [copied, setCopied] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const { data: commentCount } = useCommentCount(video.id);
-  const { requireAuth, gate } = useAuthGate();
+  const { requireAuth, gate, isGuest } = useAuthGate();
+  const { isSaved: isGuestSaved, toggle: toggleGuestSave } = useGuestSaves();
+  const saved = isGuest ? isGuestSaved(video.id) : false;
+
+  const handleSave = useCallback(() => {
+    if (isGuest) {
+      const nowSaved = toggleGuestSave(video.id);
+      toast.success(
+        nowSaved
+          ? "Saved on this device"
+          : "Removed from saved",
+        {
+          description: nowSaved
+            ? "Sign in to keep your saves across devices."
+            : undefined,
+          action: nowSaved
+            ? {
+                label: "Sign in",
+                onClick: () =>
+                  requireAuth("view your saved reels", () => {
+                    /* signed in — server-backed list TBD */
+                  }),
+              }
+            : undefined,
+        },
+      );
+      void trackEvent("guest_save_toggle", {
+        props: { video_id: video.id, saved: nowSaved },
+      });
+      return;
+    }
+    requireAuth("save reels to your library", () => {
+      toast.info("Saved library is coming soon");
+    });
+  }, [isGuest, toggleGuestSave, video.id, requireAuth]);
 
   // Auto-open the comments sheet when a `?c=<id>` deep link points at this video.
   useEffect(() => {
@@ -243,6 +278,31 @@ const VideoCardImpl = ({
           </div>
           <span className="text-xs font-semibold drop-shadow">
             {commentCount ?? 0}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSave}
+          aria-label={saved ? "Remove from saved" : "Save"}
+          aria-pressed={saved}
+          className="flex flex-col items-center gap-1 text-white"
+        >
+          <div
+            className={cn(
+              "rounded-full bg-black/30 p-3 backdrop-blur-sm transition active:scale-90",
+              saved && "bg-primary/20",
+            )}
+          >
+            <Bookmark
+              className={cn(
+                "h-7 w-7 transition",
+                saved ? "fill-primary text-primary" : "text-white",
+              )}
+            />
+          </div>
+          <span className="text-xs font-semibold drop-shadow">
+            {saved ? "Saved" : "Save"}
           </span>
         </button>
 
