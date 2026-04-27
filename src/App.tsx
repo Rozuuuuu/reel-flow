@@ -15,6 +15,7 @@ import Profile from "./pages/Profile.tsx";
 import UserProfile from "./pages/UserProfile.tsx";
 import AdminReports from "./pages/AdminReports.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Saved from "./pages/Saved.tsx";
 
 const queryClient = new QueryClient();
 
