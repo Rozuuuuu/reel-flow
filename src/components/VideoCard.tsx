@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Heart, Volume2, VolumeX, Play, Share2, Copy, Check, X, MessageCircle, Bookmark } from "lucide-react";
 import { useGuestSaves } from "@/hooks/useGuestSaves";
+import { useSavedIds, useToggleSavedVideo } from "@/hooks/useSavedVideos";
 import { cn } from "@/lib/utils";
 import type { FeedVideo } from "@/hooks/useVideos";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,38 +53,53 @@ const VideoCardImpl = ({
   const { data: commentCount } = useCommentCount(video.id);
   const { requireAuth, gate, isGuest } = useAuthGate();
   const { isSaved: isGuestSaved, toggle: toggleGuestSave } = useGuestSaves();
-  const saved = isGuest ? isGuestSaved(video.id) : false;
+  const { data: savedIdSet } = useSavedIds();
+  const { toggle: toggleCloudSave, isPending: isSavingPending } = useToggleSavedVideo();
+  const [guestSaving, setGuestSaving] = useState(false);
+  const saved = isGuest ? isGuestSaved(video.id) : !!savedIdSet?.has(video.id);
+  const savePending = isGuest ? guestSaving : isSavingPending(video.id);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (isGuest) {
-      const nowSaved = toggleGuestSave(video.id);
-      toast.success(
-        nowSaved
-          ? "Saved on this device"
-          : "Removed from saved",
-        {
-          description: nowSaved
-            ? "Open Saved to view them anytime."
-            : undefined,
+      setGuestSaving(true);
+      try {
+        const nowSaved = toggleGuestSave(video.id);
+        toast.success(nowSaved ? "Saved on this device" : "Removed from saved", {
+          description: nowSaved ? "Open Saved to view them anytime." : undefined,
           action: nowSaved
             ? {
                 label: "View saved",
-                onClick: () => {
-                  window.location.assign("/saved");
-                },
+                onClick: () => window.location.assign("/saved"),
               }
             : undefined,
-        },
-      );
-      void trackEvent("guest_save_toggle", {
-        props: { video_id: video.id, saved: nowSaved },
-      });
+        });
+        void trackEvent("guest_save_toggle", {
+          props: { video_id: video.id, saved: nowSaved },
+        });
+      } finally {
+        setGuestSaving(false);
+      }
       return;
     }
-    requireAuth("save reels to your library", () => {
-      toast.info("Saved library is coming soon");
+    requireAuth("save reels to your library", async () => {
+      const wasSaved = !!savedIdSet?.has(video.id);
+      const toastId = toast.loading(wasSaved ? "Removing…" : "Saving…");
+      try {
+        const nowSaved = await toggleCloudSave(video.id, wasSaved);
+        toast.success(nowSaved ? "Saved to your library" : "Removed from saved", {
+          id: toastId,
+          action: nowSaved
+            ? {
+                label: "View saved",
+                onClick: () => window.location.assign("/saved"),
+              }
+            : undefined,
+        });
+      } catch {
+        toast.error("Couldn't update saved. Try again.", { id: toastId });
+      }
     });
-  }, [isGuest, toggleGuestSave, video.id, requireAuth]);
+  }, [isGuest, toggleGuestSave, video.id, requireAuth, savedIdSet, toggleCloudSave]);
 
   // Auto-open the comments sheet when a `?c=<id>` deep link points at this video.
   useEffect(() => {
@@ -287,14 +303,17 @@ const VideoCardImpl = ({
         <button
           type="button"
           onClick={handleSave}
+          disabled={savePending}
           aria-label={saved ? "Remove from saved" : "Save"}
           aria-pressed={saved}
-          className="flex flex-col items-center gap-1 text-white"
+          aria-busy={savePending}
+          className="flex flex-col items-center gap-1 text-white disabled:opacity-60"
         >
           <div
             className={cn(
               "rounded-full bg-black/30 p-2 backdrop-blur-sm transition active:scale-90 sm:p-2.5 md:p-3",
               saved && "bg-primary/20",
+              savePending && "animate-pulse",
             )}
           >
             <Bookmark
@@ -305,7 +324,7 @@ const VideoCardImpl = ({
             />
           </div>
           <span className="text-[11px] font-semibold drop-shadow sm:text-xs">
-            {saved ? "Saved" : "Save"}
+            {savePending ? "…" : saved ? "Saved" : "Save"}
           </span>
         </button>
 
