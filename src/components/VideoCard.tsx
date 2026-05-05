@@ -303,14 +303,17 @@ const VideoCardImpl = ({
         <button
           type="button"
           onClick={handleSave}
+          disabled={savePending}
           aria-label={saved ? "Remove from saved" : "Save"}
           aria-pressed={saved}
-          className="flex flex-col items-center gap-1 text-white"
+          aria-busy={savePending}
+          className="flex flex-col items-center gap-1 text-white disabled:opacity-60"
         >
           <div
             className={cn(
               "rounded-full bg-black/30 p-2 backdrop-blur-sm transition active:scale-90 sm:p-2.5 md:p-3",
               saved && "bg-primary/20",
+              savePending && "animate-pulse",
             )}
           >
             <Bookmark
@@ -321,7 +324,7 @@ const VideoCardImpl = ({
             />
           </div>
           <span className="text-[11px] font-semibold drop-shadow sm:text-xs">
-            {saved ? "Saved" : "Save"}
+            {savePending ? "…" : saved ? "Saved" : "Save"}
           </span>
         </button>
 
