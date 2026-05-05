@@ -1,10 +1,12 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { BottomNav, SideNav, TopBar } from "./BottomNav";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { useGuestSavesSync } from "@/hooks/useSavedVideos";
 
 export const AppLayout = () => {
   const { pathname } = useLocation();
   const isFeed = pathname === "/";
+  useGuestSavesSync();
   return (
     <div className="min-h-screen bg-background">
       <SideNav />
