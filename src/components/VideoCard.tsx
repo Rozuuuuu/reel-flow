@@ -53,38 +53,53 @@ const VideoCardImpl = ({
   const { data: commentCount } = useCommentCount(video.id);
   const { requireAuth, gate, isGuest } = useAuthGate();
   const { isSaved: isGuestSaved, toggle: toggleGuestSave } = useGuestSaves();
-  const saved = isGuest ? isGuestSaved(video.id) : false;
+  const { data: savedIdSet } = useSavedIds();
+  const { toggle: toggleCloudSave, isPending: isSavingPending } = useToggleSavedVideo();
+  const [guestSaving, setGuestSaving] = useState(false);
+  const saved = isGuest ? isGuestSaved(video.id) : !!savedIdSet?.has(video.id);
+  const savePending = isGuest ? guestSaving : isSavingPending(video.id);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (isGuest) {
-      const nowSaved = toggleGuestSave(video.id);
-      toast.success(
-        nowSaved
-          ? "Saved on this device"
-          : "Removed from saved",
-        {
-          description: nowSaved
-            ? "Open Saved to view them anytime."
-            : undefined,
+      setGuestSaving(true);
+      try {
+        const nowSaved = toggleGuestSave(video.id);
+        toast.success(nowSaved ? "Saved on this device" : "Removed from saved", {
+          description: nowSaved ? "Open Saved to view them anytime." : undefined,
           action: nowSaved
             ? {
                 label: "View saved",
-                onClick: () => {
-                  window.location.assign("/saved");
-                },
+                onClick: () => window.location.assign("/saved"),
               }
             : undefined,
-        },
-      );
-      void trackEvent("guest_save_toggle", {
-        props: { video_id: video.id, saved: nowSaved },
-      });
+        });
+        void trackEvent("guest_save_toggle", {
+          props: { video_id: video.id, saved: nowSaved },
+        });
+      } finally {
+        setGuestSaving(false);
+      }
       return;
     }
-    requireAuth("save reels to your library", () => {
-      toast.info("Saved library is coming soon");
+    requireAuth("save reels to your library", async () => {
+      const wasSaved = !!savedIdSet?.has(video.id);
+      const toastId = toast.loading(wasSaved ? "Removing…" : "Saving…");
+      try {
+        const nowSaved = await toggleCloudSave(video.id, wasSaved);
+        toast.success(nowSaved ? "Saved to your library" : "Removed from saved", {
+          id: toastId,
+          action: nowSaved
+            ? {
+                label: "View saved",
+                onClick: () => window.location.assign("/saved"),
+              }
+            : undefined,
+        });
+      } catch {
+        toast.error("Couldn't update saved. Try again.", { id: toastId });
+      }
     });
-  }, [isGuest, toggleGuestSave, video.id, requireAuth]);
+  }, [isGuest, toggleGuestSave, video.id, requireAuth, savedIdSet, toggleCloudSave]);
 
   // Auto-open the comments sheet when a `?c=<id>` deep link points at this video.
   useEffect(() => {
