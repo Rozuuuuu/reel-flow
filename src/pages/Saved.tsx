@@ -18,6 +18,7 @@ import {
   useToggleSavedVideo,
 } from "@/hooks/useSavedVideos";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
 /**
