@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Bookmark,
   Loader2,
@@ -9,6 +9,8 @@ import {
   Share2,
   Check,
   Copy,
+  Eye,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGuestSaves } from "@/hooks/useGuestSaves";
@@ -23,12 +25,22 @@ import { toast } from "sonner";
 
 /**
  * Saved reels page.
+ *  - `?ids=a,b,c`: read-only shared list view (no auth required).
  *  - Guests: localStorage list with sign-in CTA.
  *  - Signed-in: paginated cloud library via `useSavedVideoIdsInfinite`.
  */
 export default function Saved() {
   const { user } = useAuth();
   const isGuest = !user;
+  const [params] = useSearchParams();
+  const sharedIdsParam = params.get("ids");
+  const sharedIds = useMemo(
+    () =>
+      sharedIdsParam
+        ? sharedIdsParam.split(",").map((s) => s.trim()).filter(Boolean)
+        : [],
+    [sharedIdsParam],
+  );
 
   return (
     <div className="min-h-[100dvh] bg-background pb-24 pt-2">
@@ -37,11 +49,89 @@ export default function Saved() {
         style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
         <Bookmark className="h-5 w-5 text-primary" />
-        <h1 className="text-base font-semibold sm:text-lg">Saved</h1>
+        <h1 className="text-base font-semibold sm:text-lg">
+          {sharedIds.length > 0 ? "Shared saved reels" : "Saved"}
+        </h1>
       </header>
 
-      {isGuest ? <GuestSaved /> : <CloudSaved />}
+      {sharedIds.length > 0 ? (
+        <SharedSaved ids={sharedIds} />
+      ) : isGuest ? (
+        <GuestSaved />
+      ) : (
+        <CloudSaved />
+      )}
     </div>
+  );
+}
+
+/* ------------------------- Shared read-only view ------------------------- */
+
+function SharedSaved({ ids }: { ids: string[] }) {
+  const { user } = useAuth();
+  const { data: videos, isLoading } = useVideosByIds(ids, user?.id);
+  const foundCount = videos?.length ?? 0;
+  const missingCount = ids.length - foundCount;
+
+  return (
+    <>
+      <section className="mx-auto mt-4 w-full max-w-3xl px-4">
+        <div className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-primary/10 p-2 text-primary">
+              <Eye className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold">
+                Viewing a shared list ({ids.length} reel{ids.length === 1 ? "" : "s"})
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Read-only — sign in to save these reels to your own library.
+              </p>
+            </div>
+            {!user && (
+              <Button asChild size="sm" variant="brand">
+                <Link to="/auth">Sign in</Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto mt-3 w-full max-w-5xl px-3 sm:px-4">
+        {isLoading ? (
+          <LoadingState />
+        ) : foundCount === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+            <div className="rounded-full bg-muted p-4">
+              <AlertCircle className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-base font-semibold">These reels aren't available</h3>
+            <p className="max-w-xs text-sm text-muted-foreground">
+              They may have been deleted or made private. Try browsing the feed instead.
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-2">
+              <Link to="/">Browse reels</Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            {missingCount > 0 && (
+              <div
+                role="status"
+                className="mb-3 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  {missingCount} reel{missingCount === 1 ? "" : "s"} from this shared list couldn't be found (deleted or private).
+                </span>
+              </div>
+            )}
+            <SavedGrid videos={videos ?? []} readOnly />
+          </>
+        )}
+      </section>
+    </>
   );
 }
 
@@ -295,10 +385,12 @@ function SavedGrid({
   videos,
   onRemove,
   isRemoving,
+  readOnly,
 }: {
   videos: { id: string; thumbnail_url: string | null; caption: string | null; profile: { username: string } | null }[];
-  onRemove: (id: string) => void;
+  onRemove?: (id: string) => void;
   isRemoving?: (id: string) => boolean;
+  readOnly?: boolean;
 }) {
   return (
     <ul
@@ -339,23 +431,25 @@ function SavedGrid({
                 </p>
               </div>
             </Link>
-            <button
-              type="button"
-              onClick={() => !removing && onRemove(v.id)}
-              disabled={removing}
-              aria-label="Remove from saved"
-              aria-busy={removing}
-              className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1.5 text-white transition
-                         opacity-100 sm:opacity-0 sm:group-hover:opacity-100
-                         focus-visible:opacity-100 disabled:opacity-50
-                         min-h-[32px] min-w-[32px] flex items-center justify-center"
-            >
-              {removing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
-              )}
-            </button>
+            {!readOnly && onRemove && (
+              <button
+                type="button"
+                onClick={() => !removing && onRemove(v.id)}
+                disabled={removing}
+                aria-label="Remove from saved"
+                aria-busy={removing}
+                className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1.5 text-white transition
+                           opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                           focus-visible:opacity-100 disabled:opacity-50
+                           min-h-[32px] min-w-[32px] flex items-center justify-center"
+              >
+                {removing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
           </li>
         );
       })}
