@@ -8,9 +8,15 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: ["reel-flow.onrender.com", ".onrender.com", ".lovable.app", "localhost"],
     hmr: {
       overlay: false,
     },
+  },
+  preview: {
+    host: "::",
+    port: Number(process.env.PORT) || 8080,
+    allowedHosts: ["reel-flow.onrender.com", ".onrender.com", ".lovable.app", "localhost"],
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
