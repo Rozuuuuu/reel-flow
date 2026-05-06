@@ -210,14 +210,30 @@ function CloudSaved() {
 function SavedToolbar({ ids, count }: { ids: string[]; count: number }) {
   const [copied, setCopied] = useState(false);
 
+  const buildUrl = () =>
+    `${window.location.origin}/saved?ids=${encodeURIComponent(ids.join(","))}`;
+
+  const handleCopy = async () => {
+    if (ids.length === 0) {
+      toast.info("Nothing to copy yet");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(buildUrl());
+      setCopied(true);
+      toast.success("Link copied");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy link");
+    }
+  };
+
   const handleShare = async () => {
     if (ids.length === 0) {
       toast.info("Nothing to share yet");
       return;
     }
-    const url = `${window.location.origin}/saved?ids=${encodeURIComponent(
-      ids.join(","),
-    )}`;
+    const url = buildUrl();
     const shareData = {
       title: "My saved reels",
       text: `Check out my ${ids.length} saved reel${ids.length === 1 ? "" : "s"}`,
@@ -231,14 +247,7 @@ function SavedToolbar({ ids, count }: { ids: string[]; count: number }) {
     } catch (err) {
       if ((err as DOMException)?.name === "AbortError") return;
     }
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast.success("Share link copied to clipboard");
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Couldn't copy link");
-    }
+    await handleCopy();
   };
 
   return (
@@ -246,25 +255,38 @@ function SavedToolbar({ ids, count }: { ids: string[]; count: number }) {
       <span className="text-xs text-muted-foreground">
         {count} item{count === 1 ? "" : "s"}
       </span>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={handleShare}
-        disabled={count === 0}
-      >
-        {copied ? (
-          <>
-            <Check className="mr-1.5 h-4 w-4" />
-            Copied
-          </>
-        ) : (
-          <>
-            <Share2 className="mr-1.5 h-4 w-4" />
-            Share saved
-          </>
-        )}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={handleCopy}
+          disabled={count === 0}
+          aria-label="Copy share link"
+        >
+          {copied ? (
+            <>
+              <Check className="mr-1.5 h-4 w-4" />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="mr-1.5 h-4 w-4" />
+              Copy link
+            </>
+          )}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={handleShare}
+          disabled={count === 0}
+        >
+          <Share2 className="mr-1.5 h-4 w-4" />
+          Share saved
+        </Button>
+      </div>
     </div>
   );
 }
