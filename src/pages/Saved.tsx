@@ -385,10 +385,12 @@ function SavedGrid({
   videos,
   onRemove,
   isRemoving,
+  readOnly,
 }: {
   videos: { id: string; thumbnail_url: string | null; caption: string | null; profile: { username: string } | null }[];
-  onRemove: (id: string) => void;
+  onRemove?: (id: string) => void;
   isRemoving?: (id: string) => boolean;
+  readOnly?: boolean;
 }) {
   return (
     <ul
@@ -429,23 +431,25 @@ function SavedGrid({
                 </p>
               </div>
             </Link>
-            <button
-              type="button"
-              onClick={() => !removing && onRemove(v.id)}
-              disabled={removing}
-              aria-label="Remove from saved"
-              aria-busy={removing}
-              className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1.5 text-white transition
-                         opacity-100 sm:opacity-0 sm:group-hover:opacity-100
-                         focus-visible:opacity-100 disabled:opacity-50
-                         min-h-[32px] min-w-[32px] flex items-center justify-center"
-            >
-              {removing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
-              )}
-            </button>
+            {!readOnly && onRemove && (
+              <button
+                type="button"
+                onClick={() => !removing && onRemove(v.id)}
+                disabled={removing}
+                aria-label="Remove from saved"
+                aria-busy={removing}
+                className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1.5 text-white transition
+                           opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                           focus-visible:opacity-100 disabled:opacity-50
+                           min-h-[32px] min-w-[32px] flex items-center justify-center"
+              >
+                {removing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
           </li>
         );
       })}
