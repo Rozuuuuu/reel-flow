@@ -382,8 +382,16 @@ function EmptyState() {
 
 function LoadingState() {
   return (
-    <div className="flex justify-center py-12">
-      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-    </div>
+    <ul
+      className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+      aria-busy="true"
+      aria-label="Loading saved reels"
+    >
+      {Array.from({ length: 12 }).map((_, i) => (
+        <li key={i} className="aspect-[9/16] overflow-hidden rounded-lg">
+          <Skeleton className="h-full w-full" />
+        </li>
+      ))}
+    </ul>
   );
 }
