@@ -10,8 +10,6 @@ const cors = require("cors");
 const app = express();
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
-// Allowlist comes from ALLOWED_ORIGINS (comma-separated), plus sensible
-// defaults for local dev and the Render hostname.
 const allowList = new Set(
   [
     ...(process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()),
@@ -24,10 +22,8 @@ const allowList = new Set(
 
 const corsOptions = {
   origin(origin, cb) {
-    // Same-origin / curl / server-to-server requests have no Origin header.
     if (!origin) return cb(null, true);
     if (allowList.has(origin)) return cb(null, true);
-    // Allow any *.onrender.com and *.lovable.app subdomain.
     try {
       const { hostname } = new URL(origin);
       if (/\.onrender\.com$/.test(hostname) || /\.lovable\.(app|dev)$/.test(hostname)) {
@@ -45,14 +41,41 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// Explicit preflight handler for every route.
 app.options("*", cors(corsOptions));
-
 app.use(express.json({ limit: "1mb" }));
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
+// ─── Diagnostics ─────────────────────────────────────────────────────────────
+const STARTED_AT = new Date().toISOString();
+
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, service: "reel-flow-api", time: new Date().toISOString() });
+  res.json({
+    ok: true,
+    service: "reel-flow-api",
+    time: new Date().toISOString(),
+    startedAt: STARTED_AT,
+    version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || "dev",
+  });
+});
+
+// Reports which non-secret env vars are configured. Never returns secret values.
+app.get("/api/env", (_req, res) => {
+  const keys = [
+    "NODE_ENV",
+    "PORT",
+    "ALLOWED_ORIGINS",
+    "RENDER_EXTERNAL_HOSTNAME",
+    "RENDER_GIT_COMMIT",
+    "RENDER_SERVICE_NAME",
+  ];
+  const present = {};
+  for (const k of keys) present[k] = Boolean(process.env[k]);
+  res.json({
+    ok: true,
+    present,
+    allowedOrigins: [...allowList],
+    hostname: process.env.RENDER_EXTERNAL_HOSTNAME || null,
+    nodeEnv: process.env.NODE_ENV || "development",
+  });
 });
 
 // Add your real API routes here, e.g.
