@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { BottomNav, SideNav, TopBar } from "./BottomNav";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { useGuestSavesSync } from "@/hooks/useSavedVideos";
+import { BackendHealthIndicator } from "./BackendHealthIndicator";
 
 export const AppLayout = () => {
   const { pathname } = useLocation();
@@ -23,6 +24,9 @@ export const AppLayout = () => {
         </ErrorBoundary>
       </main>
       <BottomNav />
+      <div className="fixed bottom-2 right-2 z-40 hidden md:block">
+        <BackendHealthIndicator />
+      </div>
     </div>
   );
 };
