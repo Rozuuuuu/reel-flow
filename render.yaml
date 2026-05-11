@@ -1,0 +1,56 @@
+# Render Blueprint — frontend (Vite SPA) + backend (Node/Express) with
+# same-origin /api reverse proxy so the browser never has to deal with CORS.
+#
+# Apply with: render.com → New → Blueprint → point at this repo.
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Frontend — static site served from `dist/`. Routes /api/* to the backend
+  # service via Render's "rewrite" rule (acts as an internal reverse proxy),
+  # so the SPA can call `/api/...` same-origin and avoid CORS entirely.
+  # ─────────────────────────────────────────────────────────────────────────
+  - type: web
+    name: reel-flow
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview -- --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_SUPABASE_PROJECT_ID
+        sync: false
+      # Same-origin default; the rewrite below proxies it to the backend.
+      - key: VITE_API_URL
+        value: /api
+      - key: VITE_ALLOWED_HOSTS
+        value: reel-flow.onrender.com
+    routes:
+      # Reverse-proxy /api/* to the backend service (same-origin from browser).
+      - type: rewrite
+        source: /api/*
+        destination: https://reel-flow-api.onrender.com/api/*
+      # SPA fallback for client-side routing.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Backend — Node/Express API. Listens on $PORT, exposes /api/*.
+  # CORS is configured in `server/index.js` to allow the frontend origins.
+  # ─────────────────────────────────────────────────────────────────────────
+  - type: web
+    name: reel-flow-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        # Comma-separated; add your custom domain here once connected.
+        value: https://reel-flow.onrender.com,https://bright-reels.lovable.app
