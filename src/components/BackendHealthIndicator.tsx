@@ -111,6 +111,24 @@ export function BackendHealthIndicator({ className }: { className?: string }) {
         size="sm"
         variant="outline"
         className="h-7 px-2 text-xs"
+        onClick={ping}
+        disabled={api === "checking" || edge === "checking"}
+        title="Re-run backend and edge function checks"
+        aria-label="Refresh status"
+      >
+        <RefreshCw
+          className={cn(
+            "h-3 w-3",
+            (api === "checking" || edge === "checking") && "animate-spin",
+          )}
+        />
+        <span className="ml-1">Refresh status</span>
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-7 px-2 text-xs"
         onClick={openDiagnostics}
       >
         Diagnostics
