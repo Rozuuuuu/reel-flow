@@ -44,6 +44,20 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(express.json({ limit: "1mb" }));
 
+// ─── Request correlation ─────────────────────────────────────────────────────
+// Echo the client's X-Request-Id (or generate one) on every response so the
+// same ID appears in browser toasts, frontend logs, and backend logs.
+app.use((req, res, next) => {
+  const incoming = req.header("x-request-id");
+  const reqId =
+    incoming && /^[\w.-]{1,128}$/.test(incoming)
+      ? incoming
+      : `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  req.requestId = reqId;
+  res.setHeader("X-Request-Id", reqId);
+  next();
+});
+
 // ─── Diagnostics ─────────────────────────────────────────────────────────────
 const STARTED_AT = new Date().toISOString();
 
