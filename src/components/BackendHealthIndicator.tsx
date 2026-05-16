@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, AlertCircle, Loader2, Activity, Zap } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, Activity, Zap, RefreshCw } from "lucide-react";
 import { checkHealth, checkEdgeFunction, fetchEnvDiagnostics, type EnvDiagnosticsResponse } from "@/lib/api";
 import { env } from "@/lib/env";
 import { cn } from "@/lib/utils";
