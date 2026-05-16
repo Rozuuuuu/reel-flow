@@ -44,6 +44,20 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(express.json({ limit: "1mb" }));
 
+// ─── Request correlation ─────────────────────────────────────────────────────
+// Echo the client's X-Request-Id (or generate one) on every response so the
+// same ID appears in browser toasts, frontend logs, and backend logs.
+app.use((req, res, next) => {
+  const incoming = req.header("x-request-id");
+  const reqId =
+    incoming && /^[\w.-]{1,128}$/.test(incoming)
+      ? incoming
+      : `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  req.requestId = reqId;
+  res.setHeader("X-Request-Id", reqId);
+  next();
+});
+
 // ─── Diagnostics ─────────────────────────────────────────────────────────────
 const STARTED_AT = new Date().toISOString();
 
@@ -80,6 +94,30 @@ app.get("/api/env", (_req, res) => {
 
 // Add your real API routes here, e.g.
 // app.use("/api/videos", require("./routes/videos"));
+
+// ─── 404 + Error handlers ────────────────────────────────────────────────────
+// Always echo the request ID in the JSON body so it matches the X-Request-Id
+// header and any client-side log/toast.
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    ok: false,
+    error: "Not found",
+    path: req.originalUrl,
+    requestId: req.requestId,
+  });
+});
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, _next) => {
+  const status = err.status || 500;
+  // eslint-disable-next-line no-console
+  console.error(`[${req.requestId}] ${status} ${err.message}`);
+  res.status(status).json({
+    ok: false,
+    error: err.message || "Internal Server Error",
+    requestId: req.requestId,
+  });
+});
 
 // ─── Boot ────────────────────────────────────────────────────────────────────
 const PORT = Number(process.env.PORT) || 3001;

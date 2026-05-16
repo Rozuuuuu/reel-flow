@@ -54,16 +54,33 @@ const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** Attempt to copy text to the clipboard. Returns true on success. */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through to manual */
+  }
+  return false;
+}
+
 function showFailureToast(message: string, requestId: string, description?: string) {
   toast.error(message, {
     description: `${description ? description + " · " : ""}ID: ${requestId}`,
     action: {
       label: "Copy ID",
-      onClick: () => {
-        try {
-          void navigator.clipboard?.writeText(requestId);
-        } catch {
-          /* clipboard unavailable */
+      onClick: async () => {
+        const ok = await copyToClipboard(requestId);
+        if (!ok) {
+          // Clipboard unavailable — surface the ID as selectable text so the
+          // user can copy it manually.
+          toast.message("Copy this request ID", {
+            description: requestId,
+            duration: 15_000,
+          });
         }
       },
     },
