@@ -13,6 +13,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ['"Instrument Serif"', "ui-serif", "Georgia", "serif"],
+        serif: ['"Instrument Serif"', "ui-serif", "Georgia", "serif"],
+        sans: ['"Work Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -46,6 +51,12 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        sunset: {
+          orange: "hsl(var(--sunset-orange))",
+          amber: "hsl(var(--sunset-amber))",
+          pink: "hsl(var(--sunset-pink))",
+          iris: "hsl(var(--sunset-iris))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
