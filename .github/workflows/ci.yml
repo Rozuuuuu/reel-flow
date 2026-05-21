@@ -13,9 +13,43 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      # Cache Bun's global install cache, keyed on the lockfile so the
+      # frozen-lockfile install stays deterministic.
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      # Cache Vite build output to speed up repeated CI runs.
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            dist
+            node_modules/.vite
+          key: ${{ runner.os }}-build-${{ hashFiles('bun.lock', 'bun.lockb', 'vite.config.ts', 'src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
       - name: Install dependencies (frozen)
         run: bun install --frozen-lockfile
+
       - name: Typecheck
         run: bunx tsc -p tsconfig.app.json --noEmit
-      - name: Run tests
-        run: bun run test
+
+      - name: Run tests with coverage
+        run: bunx vitest run --coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+          if-no-files-found: ignore
