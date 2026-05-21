@@ -165,8 +165,12 @@ export default function Feed() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="relative flex h-[100dvh] items-center justify-center bg-background sunset-glow">
+        <div className="grain absolute inset-0" />
+        <div className="relative flex flex-col items-center gap-5">
+          <div className="conic-ring h-16 w-16 rounded-full" />
+          <p className="font-display text-xl italic text-foreground/90">Tuning the feed…</p>
+        </div>
       </div>
     );
   }
@@ -176,7 +180,7 @@ export default function Feed() {
       <div
         role="tablist"
         aria-label="Feed type"
-        className="pointer-events-auto flex items-center gap-6 rounded-full px-4 py-2 text-sm font-semibold text-white/70"
+        className="pointer-events-auto flex items-center gap-7 px-4 py-2"
         style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
       >
         <button
@@ -184,24 +188,29 @@ export default function Feed() {
           aria-selected={tab === "following"}
           onClick={() => setTab("following")}
           className={cn(
-            "transition drop-shadow",
-            tab === "following" ? "text-white" : "hover:text-white/90"
+            "font-display text-xl italic leading-none transition drop-shadow",
+            tab === "following" ? "text-white" : "text-white/55 hover:text-white/85",
           )}
         >
           Following
-          {tab === "following" && <span className="mx-auto mt-1 block h-0.5 w-5 rounded-full bg-white" />}
+          {tab === "following" && (
+            <span className="mx-auto mt-1 block h-[2px] w-7 rounded-full bg-gradient-to-r from-sunset-orange to-sunset-pink" />
+          )}
         </button>
+        <span aria-hidden className="h-4 w-px bg-white/20" />
         <button
           role="tab"
           aria-selected={tab === "for-you"}
           onClick={() => setTab("for-you")}
           className={cn(
-            "transition drop-shadow",
-            tab === "for-you" ? "text-white" : "hover:text-white/90"
+            "font-display text-xl italic leading-none transition drop-shadow",
+            tab === "for-you" ? "text-white" : "text-white/55 hover:text-white/85",
           )}
         >
           For You
-          {tab === "for-you" && <span className="mx-auto mt-1 block h-0.5 w-5 rounded-full bg-white" />}
+          {tab === "for-you" && (
+            <span className="mx-auto mt-1 block h-[2px] w-7 rounded-full bg-gradient-to-r from-sunset-orange to-sunset-pink" />
+          )}
         </button>
       </div>
     </div>
@@ -210,29 +219,40 @@ export default function Feed() {
   if (list.length === 0) {
     const isFollowingEmpty = tab === "following";
     return (
-      <div className="relative h-[100dvh] bg-black">
+      <div className="relative h-[100dvh] bg-background sunset-glow">
+        <div className="grain absolute inset-0 pointer-events-none" />
         {tabs}
-        <div className="flex h-full flex-col items-center justify-center gap-6 px-6 text-center">
-          <div className="rounded-full bg-gradient-brand p-6 shadow-glow">
-            {isFollowingEmpty ? (
-              <UserPlus className="h-12 w-12 text-white" />
-            ) : (
-              <Film className="h-12 w-12 text-white" />
-            )}
+        <div className="relative flex h-full flex-col items-center justify-center gap-7 px-8 text-center">
+          <div className="relative">
+            <div className="conic-ring h-24 w-24 rounded-full opacity-90" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              {isFollowingEmpty ? (
+                <UserPlus className="h-8 w-8 text-foreground/90" strokeWidth={1.5} />
+              ) : (
+                <Film className="h-8 w-8 text-foreground/90" strokeWidth={1.5} />
+              )}
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              {isFollowingEmpty ? "Nothing here yet" : "No reels yet"}
+          <div className="max-w-xs">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-sunset-orange">
+              {isFollowingEmpty ? "Your circle" : "Reelo · Original"}
+            </p>
+            <h2 className="font-display text-4xl italic leading-[1.05] text-foreground">
+              {isFollowingEmpty ? (
+                <>Nothing<br />here <span className="text-gradient-brand">yet.</span></>
+              ) : (
+                <>Start the<br /><span className="text-gradient-brand">narrative.</span></>
+              )}
             </h2>
-            <p className="mt-1 text-white/70">
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {isFollowingEmpty
-                ? "Follow creators to see their reels here."
-                : "Be the first to upload a video."}
+                ? "Follow a few creators and their reels will surface in this stream."
+                : "Be the first to upload a video and set the tone for the feed."}
             </p>
           </div>
-          <Button asChild variant="brand" size="lg">
+          <Button asChild variant="brand" size="lg" className="rounded-full px-7 uppercase tracking-[0.18em] text-xs">
             <Link to={isFollowingEmpty ? "/search" : "/upload"}>
-              {isFollowingEmpty ? "Find people to follow" : "Upload your first reel"}
+              {isFollowingEmpty ? "Find creators" : "Upload a reel"}
             </Link>
           </Button>
         </div>

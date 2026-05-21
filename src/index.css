@@ -2,137 +2,215 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Reels-style design system. All colors HSL. */
+/* Reelo — "Sunset Blaze" editorial design system.
+   Palette locked: #ff6b35 #f7931e #e84393 #6c5ce7 on near-black.
+   Typography: Instrument Serif (display/italic) + Work Sans (UI/body). */
 
 @layer base {
   :root {
-    /* Dark by default — reels apps are dark-first */
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
+    /* Near-black base with a hint of warmth */
+    --background: 240 6% 4%;
+    --foreground: 30 20% 96%;
 
-    --card: 240 8% 8%;
-    --card-foreground: 0 0% 98%;
+    --card: 240 6% 7%;
+    --card-foreground: 30 20% 96%;
 
-    --popover: 240 8% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 240 6% 6%;
+    --popover-foreground: 30 20% 96%;
 
-    /* Hot pink accent (Instagram Reels-inspired) */
-    --primary: 340 95% 60%;
+    /* Sunset pink as primary brand accent (#e84393) */
+    --primary: 327 79% 59%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 6% 14%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 5% 12%;
+    --secondary-foreground: 30 20% 96%;
 
-    --muted: 240 6% 14%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 240 5% 12%;
+    --muted-foreground: 30 8% 64%;
 
-    --accent: 280 90% 65%;
+    /* Iris violet (#6c5ce7) */
+    --accent: 250 73% 63%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 6% 16%;
-    --input: 240 6% 16%;
-    --ring: 340 95% 60%;
+    --border: 30 10% 14%;
+    --input: 30 10% 14%;
+    --ring: 327 79% 59%;
 
-    --radius: 1rem;
+    --radius: 1.25rem;
+
+    /* Named sunset stops — for direct utility use */
+    --sunset-orange: 14 100% 60%;    /* #ff6b35 */
+    --sunset-amber:  32 93% 54%;     /* #f7931e */
+    --sunset-pink:   327 79% 59%;    /* #e84393 */
+    --sunset-iris:   250 73% 63%;    /* #6c5ce7 */
 
     /* Brand gradients */
-    --gradient-brand: linear-gradient(135deg, hsl(340 95% 60%) 0%, hsl(280 90% 65%) 50%, hsl(220 90% 60%) 100%);
-    --gradient-overlay: linear-gradient(180deg, transparent 0%, transparent 50%, hsl(240 10% 4% / 0.85) 100%);
-    --gradient-overlay-top: linear-gradient(180deg, hsl(240 10% 4% / 0.7) 0%, transparent 30%);
+    --gradient-brand: linear-gradient(135deg,
+      hsl(var(--sunset-orange)) 0%,
+      hsl(var(--sunset-amber)) 28%,
+      hsl(var(--sunset-pink)) 64%,
+      hsl(var(--sunset-iris)) 100%);
+    --gradient-brand-soft: linear-gradient(135deg,
+      hsl(var(--sunset-orange) / 0.18) 0%,
+      hsl(var(--sunset-pink) / 0.18) 50%,
+      hsl(var(--sunset-iris) / 0.18) 100%);
+    --gradient-overlay: linear-gradient(180deg, transparent 0%, transparent 45%, hsl(240 6% 3% / 0.92) 100%);
+    --gradient-overlay-top: linear-gradient(180deg, hsl(240 6% 3% / 0.7) 0%, transparent 30%);
+    --gradient-ribbon: linear-gradient(90deg, transparent, hsl(var(--sunset-pink) / 0.7), hsl(var(--sunset-orange) / 0.7), transparent);
 
     /* Shadows / glows */
-    --shadow-glow: 0 0 40px hsl(340 95% 60% / 0.45);
-    --shadow-soft: 0 8px 32px hsl(240 10% 0% / 0.5);
+    --shadow-glow: 0 8px 32px hsl(var(--sunset-pink) / 0.35), 0 0 1px hsl(var(--sunset-orange) / 0.4);
+    --shadow-soft: 0 18px 48px hsl(240 10% 0% / 0.55);
 
-    /* Motion */
     --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
-    --sidebar-background: 240 8% 6%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 340 95% 60%;
+    --sidebar-background: 240 6% 5%;
+    --sidebar-foreground: 30 20% 96%;
+    --sidebar-primary: 327 79% 59%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 6% 14%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 6% 16%;
-    --sidebar-ring: 340 95% 60%;
+    --sidebar-accent: 240 5% 12%;
+    --sidebar-accent-foreground: 30 20% 96%;
+    --sidebar-border: 30 10% 14%;
+    --sidebar-ring: 327 79% 59%;
   }
 
-  /* Light mode (kept available but app forces dark) */
   .light {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 4%;
+    --background: 30 30% 98%;
+    --foreground: 240 8% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
+    --card-foreground: 240 8% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
-    --primary: 340 95% 55%;
+    --popover-foreground: 240 8% 8%;
+    --primary: 327 79% 52%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 10% 4%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 280 90% 60%;
+    --secondary: 30 10% 94%;
+    --secondary-foreground: 240 8% 8%;
+    --muted: 30 10% 94%;
+    --muted-foreground: 240 4% 40%;
+    --accent: 250 73% 55%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 340 95% 55%;
+    --border: 30 12% 88%;
+    --input: 30 12% 88%;
+    --ring: 327 79% 52%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
 
-  html, body, #root {
-    @apply h-full;
-  }
+  html, body, #root { @apply h-full; }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: "Work Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv11", "ss01";
   }
 
-  /* Hide scrollbars on the snap feed */
-  .scrollbar-hide {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+  h1, h2, h3, .font-display {
+    font-family: "Instrument Serif", "Times New Roman", ui-serif, Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+
+  .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }
 
 @layer utilities {
-  .bg-gradient-brand {
-    background: var(--gradient-brand);
-  }
+  .font-display { font-family: "Instrument Serif", ui-serif, Georgia, serif; }
+  .font-sans-ui { font-family: "Work Sans", ui-sans-serif, system-ui, sans-serif; }
+
+  .bg-gradient-brand { background: var(--gradient-brand); }
+  .bg-gradient-brand-soft { background: var(--gradient-brand-soft); }
   .text-gradient-brand {
     background: var(--gradient-brand);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-  .shadow-soft {
-    box-shadow: var(--shadow-soft);
-  }
-  .overlay-bottom {
-    background: var(--gradient-overlay);
-  }
-  .overlay-top {
-    background: var(--gradient-overlay-top);
-  }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .overlay-bottom { background: var(--gradient-overlay); }
+  .overlay-top { background: var(--gradient-overlay-top); }
+
+  /* Glass dock + cards */
   .glass {
-    background: hsl(240 10% 8% / 0.6);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: hsl(240 6% 7% / 0.6);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
   }
+  .glass-strong {
+    background: hsl(240 6% 6% / 0.78);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+  }
+
+  /* Sunset Blaze ambient glow — paint anywhere */
+  .sunset-glow {
+    position: relative;
+    isolation: isolate;
+  }
+  .sunset-glow::before {
+    content: "";
+    position: absolute;
+    inset: -30%;
+    z-index: -1;
+    background:
+      radial-gradient(40% 50% at 18% 22%, hsl(var(--sunset-pink) / 0.28), transparent 70%),
+      radial-gradient(45% 45% at 82% 30%, hsl(var(--sunset-orange) / 0.22), transparent 70%),
+      radial-gradient(55% 55% at 50% 92%, hsl(var(--sunset-iris) / 0.28), transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+
+  /* Editorial ribbon — thin gradient hairline */
+  .ribbon {
+    background: var(--gradient-ribbon);
+  }
+  .ribbon-border {
+    position: relative;
+  }
+  .ribbon-border::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -4px;
+    height: 2px;
+    background: linear-gradient(90deg, hsl(var(--sunset-iris)), hsl(var(--sunset-pink)) 60%, transparent);
+    opacity: 0.7;
+    border-radius: 2px;
+  }
+
+  /* Subtle film grain overlay (lightweight, no external asset) */
+  .grain {
+    position: relative;
+  }
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* Animated conic ring used for loaders */
+  .conic-ring {
+    background: conic-gradient(from 0deg,
+      hsl(var(--sunset-orange)),
+      hsl(var(--sunset-amber)),
+      hsl(var(--sunset-pink)),
+      hsl(var(--sunset-iris)),
+      hsl(var(--sunset-orange)));
+    -webkit-mask: radial-gradient(circle, transparent 56%, black 58%);
+            mask: radial-gradient(circle, transparent 56%, black 58%);
+    animation: spin 2.6s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
 }
