@@ -165,8 +165,12 @@ export default function Feed() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="relative flex h-[100dvh] items-center justify-center bg-background sunset-glow">
+        <div className="grain absolute inset-0" />
+        <div className="relative flex flex-col items-center gap-5">
+          <div className="conic-ring h-16 w-16 rounded-full" />
+          <p className="font-display text-xl italic text-foreground/90">Tuning the feed…</p>
+        </div>
       </div>
     );
   }
@@ -210,29 +214,40 @@ export default function Feed() {
   if (list.length === 0) {
     const isFollowingEmpty = tab === "following";
     return (
-      <div className="relative h-[100dvh] bg-black">
+      <div className="relative h-[100dvh] bg-background sunset-glow">
+        <div className="grain absolute inset-0 pointer-events-none" />
         {tabs}
-        <div className="flex h-full flex-col items-center justify-center gap-6 px-6 text-center">
-          <div className="rounded-full bg-gradient-brand p-6 shadow-glow">
-            {isFollowingEmpty ? (
-              <UserPlus className="h-12 w-12 text-white" />
-            ) : (
-              <Film className="h-12 w-12 text-white" />
-            )}
+        <div className="relative flex h-full flex-col items-center justify-center gap-7 px-8 text-center">
+          <div className="relative">
+            <div className="conic-ring h-24 w-24 rounded-full opacity-90" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              {isFollowingEmpty ? (
+                <UserPlus className="h-8 w-8 text-foreground/90" strokeWidth={1.5} />
+              ) : (
+                <Film className="h-8 w-8 text-foreground/90" strokeWidth={1.5} />
+              )}
+            </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              {isFollowingEmpty ? "Nothing here yet" : "No reels yet"}
+          <div className="max-w-xs">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-sunset-orange">
+              {isFollowingEmpty ? "Your circle" : "Reelo · Original"}
+            </p>
+            <h2 className="font-display text-4xl italic leading-[1.05] text-foreground">
+              {isFollowingEmpty ? (
+                <>Nothing<br />here <span className="text-gradient-brand">yet.</span></>
+              ) : (
+                <>Start the<br /><span className="text-gradient-brand">narrative.</span></>
+              )}
             </h2>
-            <p className="mt-1 text-white/70">
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {isFollowingEmpty
-                ? "Follow creators to see their reels here."
-                : "Be the first to upload a video."}
+                ? "Follow a few creators and their reels will surface in this stream."
+                : "Be the first to upload a video and set the tone for the feed."}
             </p>
           </div>
-          <Button asChild variant="brand" size="lg">
+          <Button asChild variant="brand" size="lg" className="rounded-full px-7 uppercase tracking-[0.18em] text-xs">
             <Link to={isFollowingEmpty ? "/search" : "/upload"}>
-              {isFollowingEmpty ? "Find people to follow" : "Upload your first reel"}
+              {isFollowingEmpty ? "Find creators" : "Upload a reel"}
             </Link>
           </Button>
         </div>
