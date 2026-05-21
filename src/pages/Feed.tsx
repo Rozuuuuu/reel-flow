@@ -180,7 +180,7 @@ export default function Feed() {
       <div
         role="tablist"
         aria-label="Feed type"
-        className="pointer-events-auto flex items-center gap-6 rounded-full px-4 py-2 text-sm font-semibold text-white/70"
+        className="pointer-events-auto flex items-center gap-7 px-4 py-2"
         style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
       >
         <button
@@ -188,24 +188,29 @@ export default function Feed() {
           aria-selected={tab === "following"}
           onClick={() => setTab("following")}
           className={cn(
-            "transition drop-shadow",
-            tab === "following" ? "text-white" : "hover:text-white/90"
+            "font-display text-xl italic leading-none transition drop-shadow",
+            tab === "following" ? "text-white" : "text-white/55 hover:text-white/85",
           )}
         >
           Following
-          {tab === "following" && <span className="mx-auto mt-1 block h-0.5 w-5 rounded-full bg-white" />}
+          {tab === "following" && (
+            <span className="mx-auto mt-1 block h-[2px] w-7 rounded-full bg-gradient-to-r from-sunset-orange to-sunset-pink" />
+          )}
         </button>
+        <span aria-hidden className="h-4 w-px bg-white/20" />
         <button
           role="tab"
           aria-selected={tab === "for-you"}
           onClick={() => setTab("for-you")}
           className={cn(
-            "transition drop-shadow",
-            tab === "for-you" ? "text-white" : "hover:text-white/90"
+            "font-display text-xl italic leading-none transition drop-shadow",
+            tab === "for-you" ? "text-white" : "text-white/55 hover:text-white/85",
           )}
         >
           For You
-          {tab === "for-you" && <span className="mx-auto mt-1 block h-0.5 w-5 rounded-full bg-white" />}
+          {tab === "for-you" && (
+            <span className="mx-auto mt-1 block h-[2px] w-7 rounded-full bg-gradient-to-r from-sunset-orange to-sunset-pink" />
+          )}
         </button>
       </div>
     </div>
