@@ -9,8 +9,10 @@ vi.mock("./env", () => ({
   }),
 }));
 
-const toastError = vi.fn();
-const toastMessage = vi.fn();
+const { toastError, toastMessage } = vi.hoisted(() => ({
+  toastError: vi.fn(),
+  toastMessage: vi.fn(),
+}));
 vi.mock("sonner", () => ({
   toast: { error: toastError, message: toastMessage },
 }));
