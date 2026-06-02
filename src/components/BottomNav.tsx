@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Plus, User, Search, LogIn } from "lucide-react";
+import { Home, Plus, User, Search, LogIn, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { useAuth } from "@/contexts/AuthContext";
