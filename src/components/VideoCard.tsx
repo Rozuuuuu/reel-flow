@@ -256,7 +256,7 @@ const VideoCardImpl = ({
       </button>
 
       {/* Right action rail — sizes scale with viewport for consistent touch targets */}
-      <div className="absolute bottom-28 right-2 z-10 flex flex-col items-center gap-3 sm:bottom-32 sm:right-3 sm:gap-4 md:gap-5">
+      <div className="absolute bottom-40 right-2 z-10 flex flex-col items-center gap-3 sm:bottom-44 sm:right-3 sm:gap-4 md:bottom-32 md:gap-5">
         <button
           type="button"
           onClick={() => requireAuth("like this reel", onToggleLike)}
