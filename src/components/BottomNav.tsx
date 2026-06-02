@@ -76,6 +76,7 @@ export const BottomNav = () => {
     { to: "/search", label: "Search", icon: Search, requiresAuth: false, action: "" },
   ];
   const rightTabs = [
+    { to: "/saved", label: "Saved", icon: Bookmark, requiresAuth: true, action: "view your saved reels" },
     { to: "/profile", label: "Profile", icon: User, requiresAuth: true, action: "view your profile" },
   ];
 
