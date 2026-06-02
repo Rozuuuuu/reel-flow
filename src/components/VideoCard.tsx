@@ -256,7 +256,7 @@ const VideoCardImpl = ({
       </button>
 
       {/* Right action rail — sizes scale with viewport for consistent touch targets */}
-      <div className="absolute bottom-28 right-2 z-10 flex flex-col items-center gap-3 sm:bottom-32 sm:right-3 sm:gap-4 md:gap-5">
+      <div className="absolute bottom-40 right-2 z-10 flex flex-col items-center gap-3 sm:bottom-44 sm:right-3 sm:gap-4 md:bottom-32 md:gap-5">
         <button
           type="button"
           onClick={() => requireAuth("like this reel", onToggleLike)}
@@ -342,7 +342,7 @@ const VideoCardImpl = ({
       </div>
 
       {/* Bottom info */}
-      <div className="absolute inset-x-0 bottom-24 z-10 px-4 pr-20 text-white">
+      <div className="absolute inset-x-0 bottom-36 z-10 px-4 pr-20 text-white md:bottom-24">
         <div className="mb-3 flex items-center gap-3">
           <Avatar className="h-10 w-10 border-2 border-white/80">
             <AvatarImage src={video.profile?.avatar_url ?? undefined} alt="" />
