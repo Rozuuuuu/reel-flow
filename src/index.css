@@ -213,4 +213,18 @@
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Dock-aware bottom offsets that respect iOS safe-area insets.
+     The mobile floating dock is ~96px tall (incl. elevated +28px upload). */
+  .bottom-dock-rail {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 9.5rem);
+  }
+  .bottom-dock-caption {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8.25rem);
+  }
+  @media (min-width: 768px) {
+    .bottom-dock-rail { bottom: 8rem; }
+    .bottom-dock-caption { bottom: 6rem; }
+  }
 }
+
