@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Plus, User, Search, LogIn } from "lucide-react";
+import { Home, Plus, User, Search, LogIn, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,6 +76,7 @@ export const BottomNav = () => {
     { to: "/search", label: "Search", icon: Search, requiresAuth: false, action: "" },
   ];
   const rightTabs = [
+    { to: "/saved", label: "Saved", icon: Bookmark, requiresAuth: true, action: "view your saved reels" },
     { to: "/profile", label: "Profile", icon: User, requiresAuth: true, action: "view your profile" },
   ];
 
