@@ -105,16 +105,15 @@ const realtimeRules = [
   ],
 ];
 
-const SecurityPolicy = () => (
+const SecurityPolicy = () => {
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "Security & RLS Policy | Reelo";
+    return () => { document.title = prev; };
+  }, []);
+  return (
   <div className="min-h-screen bg-background px-4 py-10 md:px-10">
-    <Helmet>
-      <title>Security & RLS Policy | Reelo</title>
-      <meta
-        name="description"
-        content="How Reelo protects data: per-table Row Level Security, storage bucket ownership, realtime channel authorization, and admin bypass behavior."
-      />
-      <link rel="canonical" href="/security" />
-    </Helmet>
+
 
     <article className="mx-auto max-w-4xl space-y-10 text-foreground">
       <header className="space-y-2">
