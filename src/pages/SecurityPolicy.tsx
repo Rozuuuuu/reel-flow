@@ -3,7 +3,7 @@
  * Linked from the More panel. Kept in code (not markdown) so it deploys with
  * the app and stays version-controlled alongside the migrations it describes.
  */
-import { Helmet } from "react-helmet-async";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 interface Row {

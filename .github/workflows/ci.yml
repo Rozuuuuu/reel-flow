@@ -43,7 +43,13 @@ jobs:
       - name: Typecheck
         run: bunx tsc -p tsconfig.app.json --noEmit
 
-      - name: Run tests with coverage
+      - name: Dependency security audit (fails on high/critical)
+        run: bun audit --audit-level=high
+
+      - name: Run tests with coverage (includes RLS policy smoke tests)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: bunx vitest run --coverage
 
       - name: Upload coverage report

@@ -16,6 +16,7 @@ import UserProfile from "./pages/UserProfile.tsx";
 import AdminReports from "./pages/AdminReports.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Saved from "./pages/Saved.tsx";
+import SecurityPolicy from "./pages/SecurityPolicy.tsx";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/search" element={<Search />} />
               <Route path="/u/:username" element={<UserProfile />} />
               <Route path="/saved" element={<Saved />} />
+              <Route path="/security" element={<SecurityPolicy />} />
             </Route>
             {/* Member-only routes */}
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
