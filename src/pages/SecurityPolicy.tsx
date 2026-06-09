@@ -236,6 +236,7 @@ const SecurityPolicy = () => {
       </footer>
     </article>
   </div>
-);
+  );
+};
 
 export default SecurityPolicy;
