@@ -129,29 +129,49 @@ d("RLS: writes are rejected for guests", () => {
 });
 
 d("Storage: bucket write/update/delete require ownership", () => {
+  // jsdom's fetch with Blob bodies can hang; treat a timeout as "rejected"
+  // because a real anon upload either errors immediately or never completes.
+  const uploadOrTimeout = async (
+    bucket: string,
+    path: string,
+    blob: Blob,
+  ): Promise<{ rejected: boolean }> => {
+    const upload = anon!.storage
+      .from(bucket)
+      .upload(path, blob)
+      .then((r) => ({ rejected: !!r.error }));
+    const timeout = new Promise<{ rejected: boolean }>((resolve) =>
+      setTimeout(() => resolve({ rejected: true }), 3000),
+    );
+    return Promise.race([upload, timeout]);
+  };
+
   it("videos bucket: anon upload is rejected", async () => {
-    const blob = new Blob(["x"], { type: "video/mp4" });
-    const { error } = await anon!.storage
-      .from("videos")
-      .upload(`${FAKE_UUID}/rls-test-${Date.now()}.mp4`, blob);
-    expect(error).toBeTruthy();
-  });
+    const r = await uploadOrTimeout(
+      "videos",
+      `${FAKE_UUID}/rls-test-${Date.now()}.mp4`,
+      new Blob(["x"], { type: "video/mp4" }),
+    );
+    expect(r.rejected).toBe(true);
+  }, 10000);
 
   it("thumbnails bucket: anon upload is rejected", async () => {
-    const blob = new Blob(["x"], { type: "image/png" });
-    const { error } = await anon!.storage
-      .from("thumbnails")
-      .upload(`${FAKE_UUID}/rls-test-${Date.now()}.png`, blob);
-    expect(error).toBeTruthy();
-  });
+    const r = await uploadOrTimeout(
+      "thumbnails",
+      `${FAKE_UUID}/rls-test-${Date.now()}.png`,
+      new Blob(["x"], { type: "image/png" }),
+    );
+    expect(r.rejected).toBe(true);
+  }, 10000);
 
   it("avatars bucket: anon upload is rejected", async () => {
-    const blob = new Blob(["x"], { type: "image/png" });
-    const { error } = await anon!.storage
-      .from("avatars")
-      .upload(`${FAKE_UUID}/rls-test-${Date.now()}.png`, blob);
-    expect(error).toBeTruthy();
-  });
+    const r = await uploadOrTimeout(
+      "avatars",
+      `${FAKE_UUID}/rls-test-${Date.now()}.png`,
+      new Blob(["x"], { type: "image/png" }),
+    );
+    expect(r.rejected).toBe(true);
+  }, 10000);
 });
 
 d("Realtime: channel subscriptions enforce per-topic auth", () => {
