@@ -211,6 +211,14 @@ const SecurityPolicy = () => {
 
       <section className="space-y-3">
         <h2 className="font-serif text-2xl">How this is verified</h2>
+        <p className="text-sm text-muted-foreground">
+          Live status, per-resource test mapping, and recent PR pass/fail
+          history live on the{" "}
+          <Link to="/security/coverage" className="underline">
+            security coverage dashboard
+          </Link>
+          .
+        </p>
         <ul className="list-disc space-y-2 pl-6 text-sm text-muted-foreground">
           <li>
             Continuous scans by the Lovable security scanner (Supabase
