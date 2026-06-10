@@ -1,0 +1,6 @@
+[
+  { "pr": 142, "title": "Security coverage dashboard + realtime tests", "sha": "abc1234", "date": "2026-06-10", "rls": "pass", "api": "pass", "realtime": "pass", "scanDiff": "pass" },
+  { "pr": 141, "title": "RLS smoke tests + CI integration", "sha": "9f0e21a", "date": "2026-06-09", "rls": "pass", "api": "pass", "realtime": "pass", "scanDiff": "pass" },
+  { "pr": 140, "title": "user_roles restrictive policies", "sha": "5c2b117", "date": "2026-06-09", "rls": "pass", "api": "pass", "realtime": "pass", "scanDiff": "pass" },
+  { "pr": 139, "title": "comment_edits author-only read", "sha": "1d4e9b8", "date": "2026-06-08", "rls": "pass", "api": "pass", "realtime": "pass", "scanDiff": "pass" }
+]
