@@ -1,0 +1,5 @@
+{
+  "$comment": "Baseline of accepted security findings across all scanners (Lovable security scan, Wiz, connector). Any new high/critical finding NOT in this list fails CI via scripts/security-scan-diff.mjs. Update this file in the same PR that legitimately introduces or accepts a new finding, with a clear justification in the PR description.",
+  "generatedAt": "2026-06-10T00:00:00.000Z",
+  "findings": []
+}
