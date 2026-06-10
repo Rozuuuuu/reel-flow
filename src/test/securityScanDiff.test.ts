@@ -56,7 +56,7 @@ describe("security-scan-diff", () => {
     });
     const r = runDiff(baseline, current);
     expect(r.status).toBe(1);
-    expect(r.stderr).toContain("W-NEW");
+    expect(r.stderr).toContain("RCE");
   });
 
   it("treats renamed/regressed findings as new (composite key)", () => {
