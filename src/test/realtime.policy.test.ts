@@ -21,7 +21,7 @@ const d = hasEnv ? describe : describe.skip;
 const STRANGER_UID = "11111111-1111-1111-1111-111111111111";
 const MALFORMED_UID = "not-a-uuid";
 
-const subscribeOnce = (client: ReturnType<typeof createClient>, topic: string) =>
+const subscribeOnce = (client: any, topic: string) =>
   new Promise<{ status: string; events: number }>((resolve) => {
     let events = 0;
     const channel = client.channel(topic);

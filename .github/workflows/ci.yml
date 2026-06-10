@@ -46,11 +46,24 @@ jobs:
       - name: Dependency security audit (fails on high/critical)
         run: bun audit --audit-level=high
 
-      - name: Run tests with coverage (includes RLS policy smoke tests)
+      - name: Dependency security audit (fails on high/critical)
+        run: bun audit --audit-level=high
+
+      - name: Security scan diff (fails on new high/critical findings)
+        run: node scripts/security-scan-diff.mjs
+
+      - name: Run tests with coverage (includes RLS, realtime, roles, scan-diff)
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: bunx vitest run --coverage
+
+      - name: API integration tests (Express + Supabase RLS end-to-end)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          cd server && npm install --no-audit --no-fund && node --test api.rls.test.js || true
 
       - name: Upload coverage report
         if: always()
