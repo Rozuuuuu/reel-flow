@@ -46,9 +46,6 @@ jobs:
       - name: Dependency security audit (fails on high/critical)
         run: bun audit --audit-level=high
 
-      - name: Dependency security audit (fails on high/critical)
-        run: bun audit --audit-level=high
-
       - name: Security scan diff (fails on new high/critical findings)
         run: node scripts/security-scan-diff.mjs
 
