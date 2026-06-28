@@ -38,6 +38,7 @@ export const COVERAGE_ROWS: CoverageRow[] = [
   { resource: "bucket:avatars", kind: "storage", policy: "Public read; owner path-segment write", tests: ["src/test/rls.policy.test.ts"], ci: true, status: "covered" },
   { resource: "realtime:notifications:<uid>", kind: "realtime", policy: "Topic uid must match auth.uid()", tests: ["src/test/rls.policy.test.ts", "src/test/realtime.policy.test.ts"], ci: true, status: "covered" },
   { resource: "realtime:comments:<video_id>", kind: "realtime", policy: "Authenticated + can_view_video()", tests: ["src/test/realtime.policy.test.ts"], ci: true, status: "covered" },
+  { resource: "SECURITY DEFINER helpers (private schema)", kind: "table", policy: "Not exposed via Data API; public wrappers are SECURITY INVOKER", tests: ["src/test/securityDefiner.policy.test.ts"], ci: true, status: "covered" },
 ];
 
 export interface PrRunSummary {

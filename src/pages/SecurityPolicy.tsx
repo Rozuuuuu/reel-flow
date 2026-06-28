@@ -210,6 +210,38 @@ const SecurityPolicy = () => {
       </section>
 
       <section className="space-y-3">
+        <h2 className="font-serif text-2xl">SECURITY DEFINER functions</h2>
+        <p className="text-sm text-muted-foreground">
+          Helper functions that need to bypass RLS (role checks, video
+          visibility checks, trigger handlers) are declared{" "}
+          <code>SECURITY DEFINER</code>. To prevent privilege escalation through
+          the Data API, the sensitive helpers now live in a dedicated{" "}
+          <code>private</code> schema that is <strong>not exposed via PostgREST</strong>,
+          and direct <code>EXECUTE</code> on the public-schema trigger functions
+          has been revoked from <code>anon</code> and <code>authenticated</code>.
+          Public wrappers (e.g. <code>public.has_role</code>,{" "}
+          <code>public.can_view_video</code>) are <code>SECURITY INVOKER</code> and
+          simply forward to the private definers, so callers can only see what
+          their own RLS context allows.
+        </p>
+        <ul className="list-disc space-y-2 pl-6 text-sm text-muted-foreground">
+          <li>
+            Fixed finding{" "}
+            <code className="font-mono text-xs">
+              SUPA_authenticated_security_definer_function_executable
+            </code>{" "}
+            — definer bodies moved to <code>private</code> schema, EXECUTE
+            revoked from API roles on trigger-only functions.
+          </li>
+          <li>
+            Verified by <code>src/test/securityDefiner.policy.test.ts</code>,
+            which asserts non-admin clients cannot reach the private helpers and
+            that public wrappers honor the caller's RLS context.
+          </li>
+        </ul>
+      </section>
+
+      <section className="space-y-3">
         <h2 className="font-serif text-2xl">How this is verified</h2>
         <p className="text-sm text-muted-foreground">
           Live status, per-resource test mapping, and recent PR pass/fail
