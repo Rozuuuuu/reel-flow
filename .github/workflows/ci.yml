@@ -59,6 +59,22 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: bunx vitest run --coverage
 
+      # Dedicated gate: re-run the SECURITY DEFINER admin/owner reachability
+      # tests in isolation. If helper reachability behavior ever changes
+      # (admin loses `has_role`, private schema becomes callable, owner
+      # loses `can_view_video`, etc.) this step fails the PR loudly instead
+      # of hiding inside the broader vitest run.
+      - name: SECURITY DEFINER admin/owner reachability gate
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          TEST_OWNER_EMAIL: ${{ secrets.TEST_OWNER_EMAIL }}
+          TEST_OWNER_PASSWORD: ${{ secrets.TEST_OWNER_PASSWORD }}
+          TEST_OWNER_VIDEO_ID: ${{ secrets.TEST_OWNER_VIDEO_ID }}
+        run: bunx vitest run src/test/securityDefiner.policy.test.ts src/test/securityDefiner.admin.policy.test.ts --reporter=verbose
+
       - name: API integration tests (Express + Supabase RLS end-to-end)
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

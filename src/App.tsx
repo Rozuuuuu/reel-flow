@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { RequireAuth } from "@/components/RequireAuth";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { DeepLinkRedirector } from "@/components/DeepLinkRedirector";
 import Auth from "./pages/Auth.tsx";
 import Feed from "./pages/Feed.tsx";
@@ -40,7 +41,7 @@ const App = () => (
               <Route path="/saved" element={<Saved />} />
               <Route path="/security" element={<SecurityPolicy />} />
               <Route path="/security/coverage" element={<SecurityCoverage />} />
-              <Route path="/security/matrix" element={<SecurityMatrix />} />
+              <Route path="/security/matrix" element={<RequireAdmin><SecurityMatrix /></RequireAdmin>} />
             </Route>
             {/* Member-only routes */}
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
