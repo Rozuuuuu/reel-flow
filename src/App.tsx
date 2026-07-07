@@ -41,7 +41,7 @@ const App = () => (
               <Route path="/saved" element={<Saved />} />
               <Route path="/security" element={<SecurityPolicy />} />
               <Route path="/security/coverage" element={<SecurityCoverage />} />
-              <Route path="/security/matrix" element={<SecurityMatrix />} />
+              <Route path="/security/matrix" element={<RequireAdmin><SecurityMatrix /></RequireAdmin>} />
             </Route>
             {/* Member-only routes */}
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
