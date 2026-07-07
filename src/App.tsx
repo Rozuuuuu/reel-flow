@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { RequireAuth } from "@/components/RequireAuth";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import { DeepLinkRedirector } from "@/components/DeepLinkRedirector";
 import Auth from "./pages/Auth.tsx";
 import Feed from "./pages/Feed.tsx";
