@@ -221,24 +221,24 @@ export default function AdminReports() {
             selected report.
           </p>
         </div>
-        <nav aria-label="Admin tools" className="flex flex-wrap items-center gap-2 text-xs">
-          <Link
-            to="/security/matrix"
-            className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Security matrix
-          </Link>
-          <a
-            href="/security-runbook.md"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Runbook
-          </a>
-        </nav>
+        {isAdmin && (
+          <nav aria-label="Admin tools" className="flex flex-wrap items-center gap-2 text-xs">
+            <Link
+              to="/security/matrix"
+              className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Security matrix
+            </Link>
+            <Link
+              to="/security/runbook"
+              className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Runbook
+            </Link>
+          </nav>
+        )}
       </div>
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as ReportStatus); setSelected(new Set()); }}>
