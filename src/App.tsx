@@ -20,6 +20,7 @@ import Saved from "./pages/Saved.tsx";
 import SecurityPolicy from "./pages/SecurityPolicy.tsx";
 import SecurityCoverage from "./pages/SecurityCoverage.tsx";
 import SecurityMatrix from "./pages/SecurityMatrix.tsx";
+import SecurityRunbook from "./pages/SecurityRunbook.tsx";
 
 const queryClient = new QueryClient();
 
