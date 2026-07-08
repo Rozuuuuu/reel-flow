@@ -9,6 +9,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MATRIX_ROWS, WRAPPER_INDEX } from "@/data/securityMatrix";
+import { supabase } from "@/integrations/supabase/client";
 
 const kindBadge: Record<string, string> = {
   table: "bg-sky-500/15 text-sky-300 border-sky-500/30",
@@ -20,6 +21,12 @@ const SecurityMatrix = () => {
   useEffect(() => {
     const prev = document.title;
     document.title = "Security Matrix | Reelo";
+    // Fire-and-forget server-side logging + rate-limit enforcement.
+    // Errors (including rate_limit_exceeded) are swallowed here — the
+    // RequireAdmin gate remains the authoritative access control.
+    void supabase.rpc("security_matrix_access_check", {
+      _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    });
     return () => {
       document.title = prev;
     };

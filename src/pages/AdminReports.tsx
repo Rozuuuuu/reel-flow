@@ -4,6 +4,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsModerator } from "@/hooks/useComments";
+import { useIsAdmin } from "@/components/RequireAdmin";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -99,6 +100,7 @@ const useReports = (status: ReportStatus, enabled: boolean) => {
 export default function AdminReports() {
   const { user, loading } = useAuth();
   const { data: isMod, isLoading: roleLoading } = useIsModerator(user?.id);
+  const { data: isAdmin } = useIsAdmin(user?.id);
   const [tab, setTab] = useState<ReportStatus>("pending");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const qc = useQueryClient();
@@ -219,24 +221,24 @@ export default function AdminReports() {
             selected report.
           </p>
         </div>
-        <nav aria-label="Admin tools" className="flex flex-wrap items-center gap-2 text-xs">
-          <Link
-            to="/security/matrix"
-            className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Security matrix
-          </Link>
-          <a
-            href="/security-runbook.md"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Runbook
-          </a>
-        </nav>
+        {isAdmin && (
+          <nav aria-label="Admin tools" className="flex flex-wrap items-center gap-2 text-xs">
+            <Link
+              to="/security/matrix"
+              className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Security matrix
+            </Link>
+            <Link
+              to="/security/runbook"
+              className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Runbook
+            </Link>
+          </nav>
+        )}
       </div>
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v as ReportStatus); setSelected(new Set()); }}>

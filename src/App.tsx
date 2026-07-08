@@ -20,6 +20,7 @@ import Saved from "./pages/Saved.tsx";
 import SecurityPolicy from "./pages/SecurityPolicy.tsx";
 import SecurityCoverage from "./pages/SecurityCoverage.tsx";
 import SecurityMatrix from "./pages/SecurityMatrix.tsx";
+import SecurityRunbook from "./pages/SecurityRunbook.tsx";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/security" element={<SecurityPolicy />} />
               <Route path="/security/coverage" element={<SecurityCoverage />} />
               <Route path="/security/matrix" element={<RequireAdmin><SecurityMatrix /></RequireAdmin>} />
+              <Route path="/security/runbook" element={<RequireAdmin><SecurityRunbook /></RequireAdmin>} />
             </Route>
             {/* Member-only routes */}
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>

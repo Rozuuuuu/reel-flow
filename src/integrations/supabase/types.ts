@@ -353,6 +353,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          bucket: string
+          hits: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          hits?: number
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          hits?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       saved_videos: {
         Row: {
           created_at: string
@@ -371,6 +392,33 @@ export type Database = {
           id?: string
           user_id?: string
           video_id?: string
+        }
+        Relationships: []
+      }
+      security_access_log: {
+        Row: {
+          created_at: string
+          id: string
+          path: string
+          user_agent: string | null
+          user_id: string | null
+          was_admin: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path: string
+          user_agent?: string | null
+          user_id?: string | null
+          was_admin?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string
+          user_agent?: string | null
+          user_id?: string | null
+          was_admin?: boolean
         }
         Relationships: []
       }
@@ -447,7 +495,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role_rate_limited: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_moderator: { Args: { _user_id: string }; Returns: boolean }
+      security_matrix_access_check: {
+        Args: { _user_agent?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
