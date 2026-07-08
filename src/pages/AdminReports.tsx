@@ -100,6 +100,7 @@ const useReports = (status: ReportStatus, enabled: boolean) => {
 export default function AdminReports() {
   const { user, loading } = useAuth();
   const { data: isMod, isLoading: roleLoading } = useIsModerator(user?.id);
+  const { data: isAdmin } = useIsAdmin(user?.id);
   const [tab, setTab] = useState<ReportStatus>("pending");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const qc = useQueryClient();
