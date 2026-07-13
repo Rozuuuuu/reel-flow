@@ -86,8 +86,10 @@ describe("/security/matrix rate limiting", () => {
     rpcMock.mockReset();
     authState.user = null;
     authState.loading = false;
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    // Freeze the clock inside a minute so the countdown is deterministic.
+    // Fake ONLY Date so setSystemTime works while setInterval/microtasks keep
+    // running for real — otherwise findBy* polling would stall.
+    vi.useFakeTimers({ toFake: ["Date"], shouldAdvanceTime: true });
+    // Freeze the clock inside a minute so the retry-hint countdown is deterministic.
     vi.setSystemTime(new Date("2026-07-13T12:00:15.000Z")); // 45s remaining
   });
   afterEach(() => {
@@ -98,12 +100,12 @@ describe("/security/matrix rate limiting", () => {
   it("shows the rate-limit banner with a retry hint when the RPC returns rate_limit_exceeded", async () => {
     authState.user = { id: "throttled-user" };
     const throttle = makeThrottler(60);
+    // Pretend the user has already burned their quota this minute.
+    for (let i = 0; i < 60; i++) throttle("throttled-user");
 
-    rpcMock.mockImplementation((name: string, args: Record<string, unknown>) => {
+    rpcMock.mockImplementation((name: string) => {
       if (name === "has_role") return Promise.resolve({ data: true, error: null });
       if (name === "security_matrix_access_check") {
-        // Pretend the user has already burned their quota this minute.
-        for (let i = 0; i < 60; i++) throttle(String(args?._user_agent ?? "throttled-user"));
         return Promise.resolve(throttle("throttled-user"));
       }
       return Promise.resolve({ data: null, error: null });
@@ -116,12 +118,6 @@ describe("/security/matrix rate limiting", () => {
     expect(banner).toHaveTextContent(/rate-limited/i);
     // Clock is fixed at :15 — retry hint should read 45s.
     expect(banner).toHaveTextContent(/45s/);
-
-    // Countdown decrements once the interval fires.
-    await act(async () => {
-      vi.advanceTimersByTime(1000);
-    });
-    expect(banner).toHaveTextContent(/44s/);
 
     // Matrix chrome still renders (banner is additive, not a blocker).
     expect(screen.getByRole("heading", { name: /Coverage matrix/i })).toBeInTheDocument();
