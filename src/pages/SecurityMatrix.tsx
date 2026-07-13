@@ -6,8 +6,9 @@
  * helpers. Companion to /security (prose reference) and /security/coverage
  * (test coverage dashboard).
  */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Clock } from "lucide-react";
 import { MATRIX_ROWS, WRAPPER_INDEX } from "@/data/securityMatrix";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,16 +18,67 @@ const kindBadge: Record<string, string> = {
   realtime: "bg-amber-500/15 text-amber-300 border-amber-500/30",
 };
 
+/**
+ * The `enforce_rate_limit` helper buckets hits by `date_trunc('minute', now())`
+ * — so once a caller is throttled, the next allowed request is the start of
+ * the following minute. Return the seconds until that boundary for the UI.
+ */
+function secondsUntilNextMinute(now: Date = new Date()): number {
+  return Math.max(1, 60 - now.getSeconds());
+}
+
+const RateLimitBanner = ({ retryInSeconds }: { retryInSeconds: number }) => {
+  const [remaining, setRemaining] = useState(retryInSeconds);
+  useEffect(() => {
+    setRemaining(retryInSeconds);
+    const t = window.setInterval(() => {
+      setRemaining((r) => (r <= 1 ? 0 : r - 1));
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [retryInSeconds]);
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100"
+      data-testid="rate-limit-banner"
+    >
+      <Clock className="mt-0.5 h-4 w-4 shrink-0" />
+      <div>
+        <p className="font-semibold">You're viewing this page a lot</p>
+        <p className="mt-1 text-amber-100/80">
+          Access to the security matrix is rate-limited to 60 requests per minute per user.
+          {remaining > 0 ? (
+            <> Try again in <span className="font-mono">{remaining}s</span>.</>
+          ) : (
+            <> You can retry now.</>
+          )}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const SecurityMatrix = () => {
+  const [rateLimitedRetryIn, setRateLimitedRetryIn] = useState<number | null>(null);
+
   useEffect(() => {
     const prev = document.title;
     document.title = "Security Matrix | Reelo";
-    // Fire-and-forget server-side logging + rate-limit enforcement.
-    // Errors (including rate_limit_exceeded) are swallowed here — the
-    // RequireAdmin gate remains the authoritative access control.
-    void supabase.rpc("security_matrix_access_check", {
-      _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-    });
+    // Server-side logging + rate-limit enforcement. If the DB raises
+    // `rate_limit_exceeded`, surface a friendly banner with a retry hint.
+    // The <RequireAdmin> gate remains the authoritative access control.
+    void supabase
+      .rpc("security_matrix_access_check", {
+        _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      })
+      .then(({ error }) => {
+        if (!error) return;
+        const msg = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+        if (msg.includes("rate_limit_exceeded")) {
+          setRateLimitedRetryIn(secondsUntilNextMinute());
+        }
+      });
     return () => {
       document.title = prev;
     };
@@ -43,6 +95,8 @@ const SecurityMatrix = () => {
             underlying <code className="font-mono text-xs">private.*</code> SECURITY DEFINER helpers.
           </p>
         </header>
+
+        {rateLimitedRetryIn !== null && <RateLimitBanner retryInSeconds={rateLimitedRetryIn} />}
 
         <section className="space-y-3">
           <h2 className="font-serif text-2xl">Resource → policy → helpers</h2>
