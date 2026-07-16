@@ -115,7 +115,7 @@ export default function SecurityAccessLog() {
         .order("created_at", { ascending: false })
         .range(from, to);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error, count } = await applyFilters(base as any, filters);
+      const { data, error, count } = await applyFilters(base, filters);
       if (error) throw error;
       return { rows: (data ?? []) as Row[], count: count ?? 0 };
     },
@@ -136,7 +136,7 @@ export default function SecurityAccessLog() {
         .order("created_at", { ascending: false })
         .limit(CSV_EXPORT_LIMIT);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await applyFilters(base as any, filters);
+      const { data, error } = await applyFilters(base, filters);
       if (error) throw error;
       const rows = (data ?? []) as Row[];
       if (rows.length === 0) {
