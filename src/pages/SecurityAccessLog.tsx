@@ -6,12 +6,16 @@
  * RPC) is recorded there with the caller's user_id, was_admin flag, path
  * and user_agent. RLS restricts SELECT to admins; this page is additionally
  * wrapped in <RequireAdmin> for UX.
+ *
+ * Server-side pagination is used so filtering stays fast as the log grows —
+ * the table is indexed on (user_id, was_admin, created_at DESC) and
+ * (was_admin, created_at DESC) to keep every filter shape on an index scan.
  */
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 type Row = {
   id: string;
@@ -42,32 +47,130 @@ const WINDOWS: { label: string; hours: number }[] = [
   { label: "Last 30 days", hours: 24 * 30 },
 ];
 
+const PAGE_SIZE = 50;
+// Safety cap on a single CSV export — the underlying table is admin-only but
+// we still want to bound memory and download size.
+const CSV_EXPORT_LIMIT = 10_000;
+
+type Filters = {
+  userIdFilter: string;
+  sinceIso: string;
+  adminFilter: AdminFilter;
+};
+
+/**
+ * Build the base filtered query. Kept as a helper so the table view and the
+ * CSV export share the exact same filter semantics — otherwise it's easy to
+ * drift and export a superset of what the user sees.
+ */
+function applyFilters(
+  base: ReturnType<typeof supabase.from<"security_access_log", Row>>["select"] extends never
+    ? never
+    : ReturnType<ReturnType<typeof supabase.from>["select"]>,
+  { userIdFilter, sinceIso, adminFilter }: Filters,
+) {
+  let q = base.gte("created_at", sinceIso);
+  if (userIdFilter.trim()) q = q.eq("user_id", userIdFilter.trim());
+  if (adminFilter !== "any") q = q.eq("was_admin", adminFilter === "admin");
+  return q;
+}
+
+function csvEscape(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function toCsv(rows: Row[]): string {
+  const header = ["created_at", "user_id", "path", "was_admin", "user_agent"];
+  const body = rows.map((r) =>
+    [r.created_at, r.user_id ?? "", r.path, r.was_admin, r.user_agent ?? ""].map(csvEscape).join(","),
+  );
+  return [header.join(","), ...body].join("\n");
+}
+
 export default function SecurityAccessLog() {
   const [userIdFilter, setUserIdFilter] = useState("");
   const [hours, setHours] = useState(24);
   const [adminFilter, setAdminFilter] = useState<AdminFilter>("any");
+  const [page, setPage] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
 
   const sinceIso = useMemo(
     () => new Date(Date.now() - hours * 3600 * 1000).toISOString(),
     [hours],
   );
 
+  const filters: Filters = { userIdFilter, sinceIso, adminFilter };
+
   const query = useQuery({
-    queryKey: ["security-access-log", userIdFilter, hours, adminFilter],
-    queryFn: async (): Promise<Row[]> => {
-      let q = supabase
+    queryKey: ["security-access-log", userIdFilter, hours, adminFilter, page],
+    placeholderData: keepPreviousData,
+    queryFn: async (): Promise<{ rows: Row[]; count: number }> => {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const base = supabase
         .from("security_access_log")
-        .select("*")
-        .gte("created_at", sinceIso)
+        .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(500);
-      if (userIdFilter.trim()) q = q.eq("user_id", userIdFilter.trim());
-      if (adminFilter !== "any") q = q.eq("was_admin", adminFilter === "admin");
-      const { data, error } = await q;
+        .range(from, to);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error, count } = await applyFilters(base as any, filters);
       if (error) throw error;
-      return (data ?? []) as Row[];
+      return { rows: (data ?? []) as Row[], count: count ?? 0 };
     },
   });
+
+  const total = query.data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Reset to first page whenever a filter changes.
+  const resetPage = () => setPage(0);
+
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    try {
+      const base = supabase
+        .from("security_access_log")
+        .select("id,user_id,path,was_admin,user_agent,created_at")
+        .order("created_at", { ascending: false })
+        .limit(CSV_EXPORT_LIMIT);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await applyFilters(base as any, filters);
+      if (error) throw error;
+      const rows = (data ?? []) as Row[];
+      if (rows.length === 0) {
+        toast({ title: "Nothing to export", description: "No entries match the current filters." });
+        return;
+      }
+      const csv = toCsv(rows);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `security-access-log-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({
+        title: "Export ready",
+        description:
+          rows.length >= CSV_EXPORT_LIMIT
+            ? `Exported ${rows.length} rows (capped). Narrow the filters to export the rest.`
+            : `Exported ${rows.length} row${rows.length === 1 ? "" : "s"}.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Export failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background px-4 py-10 md:px-10">
@@ -90,13 +193,13 @@ export default function SecurityAccessLog() {
               id="user-id"
               placeholder="uuid or blank for all"
               value={userIdFilter}
-              onChange={(e) => setUserIdFilter(e.target.value)}
+              onChange={(e) => { setUserIdFilter(e.target.value); resetPage(); }}
               className="font-mono text-xs"
             />
           </div>
           <div className="space-y-1">
             <Label>Time window</Label>
-            <Select value={String(hours)} onValueChange={(v) => setHours(Number(v))}>
+            <Select value={String(hours)} onValueChange={(v) => { setHours(Number(v)); resetPage(); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {WINDOWS.map((w) => (
@@ -107,7 +210,7 @@ export default function SecurityAccessLog() {
           </div>
           <div className="space-y-1">
             <Label>Was admin?</Label>
-            <Select value={adminFilter} onValueChange={(v) => setAdminFilter(v as AdminFilter)}>
+            <Select value={adminFilter} onValueChange={(v) => { setAdminFilter(v as AdminFilter); resetPage(); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Any</SelectItem>
@@ -116,14 +219,24 @@ export default function SecurityAccessLog() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <Button
               variant="secondary"
-              className="w-full"
+              className="flex-1"
               onClick={() => query.refetch()}
               disabled={query.isFetching}
             >
               {query.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleExportCsv}
+              disabled={isExporting || query.isLoading}
+              data-testid="export-csv"
+              aria-label="Export filtered results as CSV"
+            >
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              <span className="ml-2 hidden sm:inline">CSV</span>
             </Button>
           </div>
         </section>
@@ -137,49 +250,79 @@ export default function SecurityAccessLog() {
             <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
               Failed to load access log — admin role required.
             </p>
-          ) : !query.data || query.data.length === 0 ? (
+          ) : !query.data || query.data.rows.length === 0 ? (
             <p className="rounded-lg border border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
               No access attempts match these filters.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full min-w-[820px] text-left text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">When</th>
-                    <th className="px-4 py-3">User</th>
-                    <th className="px-4 py-3">Path</th>
-                    <th className="px-4 py-3">Admin?</th>
-                    <th className="px-4 py-3">User agent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {query.data.map((r) => (
-                    <tr key={r.id} className="border-t border-border align-top">
-                      <td className="px-4 py-2 whitespace-nowrap text-muted-foreground" title={r.created_at}>
-                        {formatDistanceToNowStrict(new Date(r.created_at), { addSuffix: true })}
-                      </td>
-                      <td className="px-4 py-2 font-mono text-[11px]">{r.user_id ?? "—"}</td>
-                      <td className="px-4 py-2 font-mono text-[11px]">{r.path}</td>
-                      <td className="px-4 py-2">
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-[11px] uppercase ${
-                            r.was_admin
-                              ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
-                              : "border-rose-500/30 bg-rose-500/15 text-rose-300"
-                          }`}
-                        >
-                          {r.was_admin ? "admin" : "denied"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-[11px] text-muted-foreground line-clamp-2">
-                        {r.user_agent ?? "—"}
-                      </td>
+            <>
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full min-w-[820px] text-left text-sm">
+                  <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3">When</th>
+                      <th className="px-4 py-3">User</th>
+                      <th className="px-4 py-3">Path</th>
+                      <th className="px-4 py-3">Admin?</th>
+                      <th className="px-4 py-3">User agent</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {query.data.rows.map((r) => (
+                      <tr key={r.id} className="border-t border-border align-top">
+                        <td className="px-4 py-2 whitespace-nowrap text-muted-foreground" title={r.created_at}>
+                          {formatDistanceToNowStrict(new Date(r.created_at), { addSuffix: true })}
+                        </td>
+                        <td className="px-4 py-2 font-mono text-[11px]">{r.user_id ?? "—"}</td>
+                        <td className="px-4 py-2 font-mono text-[11px]">{r.path}</td>
+                        <td className="px-4 py-2">
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-[11px] uppercase ${
+                              r.was_admin
+                                ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
+                                : "border-rose-500/30 bg-rose-500/15 text-rose-300"
+                            }`}
+                          >
+                            {r.was_admin ? "admin" : "denied"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-[11px] text-muted-foreground line-clamp-2">
+                          {r.user_agent ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                <span>
+                  Showing <span className="font-mono">{page * PAGE_SIZE + 1}</span>–
+                  <span className="font-mono">{page * PAGE_SIZE + query.data.rows.length}</span> of{" "}
+                  <span className="font-mono">{total}</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={page === 0 || query.isFetching}
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <span className="font-mono">
+                    Page {page + 1} / {totalPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={page + 1 >= totalPages || query.isFetching}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </section>
 
