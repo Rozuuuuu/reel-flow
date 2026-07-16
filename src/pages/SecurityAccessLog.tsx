@@ -63,13 +63,12 @@ type Filters = {
  * CSV export share the exact same filter semantics — otherwise it's easy to
  * drift and export a superset of what the user sees.
  */
-function applyFilters(
-  base: ReturnType<typeof supabase.from<"security_access_log", Row>>["select"] extends never
-    ? never
-    : ReturnType<ReturnType<typeof supabase.from>["select"]>,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyFilters<T extends { gte: any; eq: any }>(
+  base: T,
   { userIdFilter, sinceIso, adminFilter }: Filters,
-) {
-  let q = base.gte("created_at", sinceIso);
+): T {
+  let q: T = base.gte("created_at", sinceIso);
   if (userIdFilter.trim()) q = q.eq("user_id", userIdFilter.trim());
   if (adminFilter !== "any") q = q.eq("was_admin", adminFilter === "admin");
   return q;
