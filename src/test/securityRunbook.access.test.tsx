@@ -45,20 +45,23 @@ import { RequireAdmin } from "@/components/RequireAdmin";
 import SecurityRunbook from "@/pages/SecurityRunbook";
 
 function renderRoute() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={["/security/runbook"]}>
-      <Routes>
-        <Route path="/auth" element={<div>AUTH_PAGE</div>} />
-        <Route
-          path="/security/runbook"
-          element={
-            <RequireAdmin>
-              <SecurityRunbook />
-            </RequireAdmin>
-          }
-        />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={["/security/runbook"]}>
+        <Routes>
+          <Route path="/auth" element={<div>AUTH_PAGE</div>} />
+          <Route
+            path="/security/runbook"
+            element={
+              <RequireAdmin>
+                <SecurityRunbook />
+              </RequireAdmin>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
