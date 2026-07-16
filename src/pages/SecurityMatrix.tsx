@@ -74,9 +74,13 @@ const SecurityMatrix = () => {
       })
       .then(({ error }) => {
         if (!error) return;
-        const msg = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
-        if (msg.includes("rate_limit_exceeded")) {
-          setRateLimitedRetryIn(secondsUntilNextMinute());
+        const haystack = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`.toLowerCase();
+        if (haystack.includes("rate_limit_exceeded")) {
+          // Prefer the server-provided retry_after hint; fall back to
+          // the next-minute boundary if it's missing for any reason.
+          const match = haystack.match(/retry_after=(\d+)/);
+          const retry = match ? Math.max(1, parseInt(match[1], 10)) : secondsUntilNextMinute();
+          setRateLimitedRetryIn(retry);
         }
       });
     return () => {
