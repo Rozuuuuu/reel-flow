@@ -503,6 +503,10 @@ export type Database = {
         Returns: boolean
       }
       is_moderator: { Args: { _user_id: string }; Returns: boolean }
+      log_security_export: {
+        Args: { _filters?: Json; _user_agent?: string }
+        Returns: undefined
+      }
       security_matrix_access_check: {
         Args: { _user_agent?: string }
         Returns: boolean
