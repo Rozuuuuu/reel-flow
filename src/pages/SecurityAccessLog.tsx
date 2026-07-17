@@ -130,6 +130,19 @@ export default function SecurityAccessLog() {
   const handleExportCsv = async () => {
     setIsExporting(true);
     try {
+      // Server-side audit: record who exported which filters BEFORE running the
+      // query, so the log survives even if the export itself fails midway.
+      // The RPC is admin-gated + rate-limited (30/min/user) in the DB.
+      const { error: logError } = await supabase.rpc("log_security_export", {
+        _filters: {
+          user_id: userIdFilter.trim() || null,
+          since: sinceIso,
+          admin_filter: adminFilter,
+        },
+        _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      });
+      if (logError) throw logError;
+
       const base = supabase
         .from("security_access_log")
         .select("id,user_id,path,was_admin,user_agent,created_at")
@@ -139,6 +152,7 @@ export default function SecurityAccessLog() {
       const { data, error } = await applyFilters(base, filters);
       if (error) throw error;
       const rows = (data ?? []) as Row[];
+
       if (rows.length === 0) {
         toast({ title: "Nothing to export", description: "No entries match the current filters." });
         return;
