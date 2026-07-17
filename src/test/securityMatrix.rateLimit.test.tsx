@@ -169,4 +169,35 @@ describe("/security/matrix rate limiting", () => {
     );
     expect(screen.queryByTestId("rate-limit-banner")).toBeNull();
   });
+
+  it("uses the server-provided Retry-After hint for the countdown (not the wall-clock fallback)", async () => {
+    // Wall-clock says 45s until the next minute boundary, but the server
+    // response carries `retry_after=10` in the error HINT. The UI MUST prefer
+    // the server hint — otherwise clients under clock skew would retry early
+    // and hammer the endpoint.
+    authState.user = { id: "hinted-user" };
+    rpcMock.mockImplementation((name: string) => {
+      if (name === "has_role") return Promise.resolve({ data: true, error: null });
+      if (name === "security_matrix_access_check") {
+        return Promise.resolve({
+          data: null,
+          error: {
+            message: "rate_limit_exceeded: bucket=security_matrix_access limit=60/min retry_after=10s",
+            details: "",
+            hint: "retry_after=10",
+            code: "P0001",
+          },
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    renderRoute();
+
+    const banner = await screen.findByTestId("rate-limit-banner");
+    expect(banner).toHaveTextContent(/10s/);
+    // And it must NOT show the 45s wall-clock fallback.
+    expect(banner).not.toHaveTextContent(/45s/);
+  });
 });
+
