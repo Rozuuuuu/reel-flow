@@ -79,9 +79,7 @@ vi.mock("@/hooks/use-toast", () => ({ toast: vi.fn() }));
 beforeEach(() => {
   auditRows.length = 0;
   rpcMock.mockClear();
-  // @ts-expect-error jsdom
   URL.createObjectURL = vi.fn(() => "blob:mock");
-  // @ts-expect-error jsdom
   URL.revokeObjectURL = vi.fn();
 });
 
