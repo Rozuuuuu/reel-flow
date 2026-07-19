@@ -113,10 +113,16 @@ describe("/security/access-log CSV export audit", () => {
       target: { value: "/security/matrix" },
     });
 
-    // Click export
+    // Wait for the debounced re-render, then click export
+    await waitFor(() =>
+      expect((screen.getByLabelText("Path contains") as HTMLInputElement).value).toBe("/security/matrix"),
+    );
     fireEvent.click(screen.getByTestId("export-csv"));
 
-    await waitFor(() => expect(rpcMock).toHaveBeenCalled());
+    await waitFor(
+      () => expect(rpcMock).toHaveBeenCalledWith("log_security_export", expect.anything()),
+      { timeout: 3000 },
+    );
 
     // Assert RPC arguments
     const call = rpcMock.mock.calls.find(([n]) => n === "log_security_export");
