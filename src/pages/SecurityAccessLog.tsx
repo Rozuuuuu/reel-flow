@@ -56,6 +56,7 @@ type Filters = {
   userIdFilter: string;
   sinceIso: string;
   adminFilter: AdminFilter;
+  pathFilter: string;
 };
 
 /**
@@ -64,13 +65,14 @@ type Filters = {
  * drift and export a superset of what the user sees.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyFilters<T extends { gte: any; eq: any }>(
+function applyFilters<T extends { gte: any; eq: any; ilike: any }>(
   base: T,
-  { userIdFilter, sinceIso, adminFilter }: Filters,
+  { userIdFilter, sinceIso, adminFilter, pathFilter }: Filters,
 ): T {
   let q: T = base.gte("created_at", sinceIso);
   if (userIdFilter.trim()) q = q.eq("user_id", userIdFilter.trim());
   if (adminFilter !== "any") q = q.eq("was_admin", adminFilter === "admin");
+  if (pathFilter.trim()) q = q.ilike("path", `%${pathFilter.trim()}%`);
   return q;
 }
 
@@ -93,6 +95,7 @@ export default function SecurityAccessLog() {
   const [userIdFilter, setUserIdFilter] = useState("");
   const [hours, setHours] = useState(24);
   const [adminFilter, setAdminFilter] = useState<AdminFilter>("any");
+  const [pathFilter, setPathFilter] = useState("");
   const [page, setPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -101,10 +104,10 @@ export default function SecurityAccessLog() {
     [hours],
   );
 
-  const filters: Filters = { userIdFilter, sinceIso, adminFilter };
+  const filters: Filters = { userIdFilter, sinceIso, adminFilter, pathFilter };
 
   const query = useQuery({
-    queryKey: ["security-access-log", userIdFilter, hours, adminFilter, page],
+    queryKey: ["security-access-log", userIdFilter, hours, adminFilter, pathFilter, page],
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<{ rows: Row[]; count: number }> => {
       const from = page * PAGE_SIZE;
@@ -138,6 +141,7 @@ export default function SecurityAccessLog() {
           user_id: userIdFilter.trim() || null,
           since: sinceIso,
           admin_filter: adminFilter,
+          path: pathFilter.trim() || null,
         },
         _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
       });
@@ -199,7 +203,7 @@ export default function SecurityAccessLog() {
           </p>
         </header>
 
-        <section className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-muted/20 p-4 md:grid-cols-4">
+        <section className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-muted/20 p-4 md:grid-cols-5">
           <div className="space-y-1">
             <Label htmlFor="user-id">User ID</Label>
             <Input
@@ -207,6 +211,16 @@ export default function SecurityAccessLog() {
               placeholder="uuid or blank for all"
               value={userIdFilter}
               onChange={(e) => { setUserIdFilter(e.target.value); resetPage(); }}
+              className="font-mono text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="path-filter">Path contains</Label>
+            <Input
+              id="path-filter"
+              placeholder="e.g. /security/matrix"
+              value={pathFilter}
+              onChange={(e) => { setPathFilter(e.target.value); resetPage(); }}
               className="font-mono text-xs"
             />
           </div>
