@@ -56,6 +56,7 @@ type Filters = {
   userIdFilter: string;
   sinceIso: string;
   adminFilter: AdminFilter;
+  pathFilter: string;
 };
 
 /**
@@ -64,13 +65,14 @@ type Filters = {
  * drift and export a superset of what the user sees.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyFilters<T extends { gte: any; eq: any }>(
+function applyFilters<T extends { gte: any; eq: any; ilike: any }>(
   base: T,
-  { userIdFilter, sinceIso, adminFilter }: Filters,
+  { userIdFilter, sinceIso, adminFilter, pathFilter }: Filters,
 ): T {
   let q: T = base.gte("created_at", sinceIso);
   if (userIdFilter.trim()) q = q.eq("user_id", userIdFilter.trim());
   if (adminFilter !== "any") q = q.eq("was_admin", adminFilter === "admin");
+  if (pathFilter.trim()) q = q.ilike("path", `%${pathFilter.trim()}%`);
   return q;
 }
 
