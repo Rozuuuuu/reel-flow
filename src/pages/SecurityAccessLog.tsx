@@ -203,7 +203,7 @@ export default function SecurityAccessLog() {
           </p>
         </header>
 
-        <section className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-muted/20 p-4 md:grid-cols-4">
+        <section className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-muted/20 p-4 md:grid-cols-5">
           <div className="space-y-1">
             <Label htmlFor="user-id">User ID</Label>
             <Input
@@ -211,6 +211,16 @@ export default function SecurityAccessLog() {
               placeholder="uuid or blank for all"
               value={userIdFilter}
               onChange={(e) => { setUserIdFilter(e.target.value); resetPage(); }}
+              className="font-mono text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="path-filter">Path contains</Label>
+            <Input
+              id="path-filter"
+              placeholder="e.g. /security/matrix"
+              value={pathFilter}
+              onChange={(e) => { setPathFilter(e.target.value); resetPage(); }}
               className="font-mono text-xs"
             />
           </div>
