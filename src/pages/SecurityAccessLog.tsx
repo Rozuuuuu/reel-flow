@@ -141,6 +141,7 @@ export default function SecurityAccessLog() {
           user_id: userIdFilter.trim() || null,
           since: sinceIso,
           admin_filter: adminFilter,
+          path: pathFilter.trim() || null,
         },
         _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
       });
