@@ -95,6 +95,7 @@ export default function SecurityAccessLog() {
   const [userIdFilter, setUserIdFilter] = useState("");
   const [hours, setHours] = useState(24);
   const [adminFilter, setAdminFilter] = useState<AdminFilter>("any");
+  const [pathFilter, setPathFilter] = useState("");
   const [page, setPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -103,10 +104,10 @@ export default function SecurityAccessLog() {
     [hours],
   );
 
-  const filters: Filters = { userIdFilter, sinceIso, adminFilter };
+  const filters: Filters = { userIdFilter, sinceIso, adminFilter, pathFilter };
 
   const query = useQuery({
-    queryKey: ["security-access-log", userIdFilter, hours, adminFilter, page],
+    queryKey: ["security-access-log", userIdFilter, hours, adminFilter, pathFilter, page],
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<{ rows: Row[]; count: number }> => {
       const from = page * PAGE_SIZE;
