@@ -92,13 +92,33 @@ function toCsv(rows: Row[]): string {
   return [header.join(","), ...body].join("\n");
 }
 
+type SortKey = "created_at" | "user_id" | "was_admin" | "path";
+type SortDir = "asc" | "desc";
+const SORT_KEYS: SortKey[] = ["created_at", "user_id", "was_admin", "path"];
+
 export default function SecurityAccessLog() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [userIdFilter, setUserIdFilter] = useState("");
   const [hours, setHours] = useState(24);
   const [adminFilter, setAdminFilter] = useState<AdminFilter>("any");
   const [pathFilter, setPathFilter] = useState("");
   const [page, setPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+
+  const sortKey: SortKey = (() => {
+    const s = searchParams.get("sort");
+    return (SORT_KEYS as string[]).includes(s ?? "") ? (s as SortKey) : "created_at";
+  })();
+  const sortDir: SortDir = searchParams.get("dir") === "asc" ? "asc" : "desc";
+
+  const setSort = (key: SortKey) => {
+    const next = new URLSearchParams(searchParams);
+    const nextDir: SortDir = sortKey === key && sortDir === "desc" ? "asc" : "desc";
+    next.set("sort", key);
+    next.set("dir", nextDir);
+    setSearchParams(next, { replace: true });
+    setPage(0);
+  };
 
   const sinceIso = useMemo(
     () => new Date(Date.now() - hours * 3600 * 1000).toISOString(),
@@ -108,7 +128,7 @@ export default function SecurityAccessLog() {
   const filters: Filters = { userIdFilter, sinceIso, adminFilter, pathFilter };
 
   const query = useQuery({
-    queryKey: ["security-access-log", userIdFilter, hours, adminFilter, pathFilter, page],
+    queryKey: ["security-access-log", userIdFilter, hours, adminFilter, pathFilter, page, sortKey, sortDir],
     placeholderData: keepPreviousData,
     queryFn: async (): Promise<{ rows: Row[]; count: number }> => {
       const from = page * PAGE_SIZE;
@@ -116,7 +136,7 @@ export default function SecurityAccessLog() {
       const base = supabase
         .from("security_access_log")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
+        .order(sortKey, { ascending: sortDir === "asc" })
         .range(from, to);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error, count } = await applyFilters(base, filters);
