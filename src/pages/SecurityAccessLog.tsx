@@ -12,7 +12,8 @@
  * (was_admin, created_at DESC) to keep every filter shape on an index scan.
  */
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Download, Loader2 } from "lucide-react";
