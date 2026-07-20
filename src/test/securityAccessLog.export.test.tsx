@@ -124,10 +124,15 @@ describe("/security/access-log CSV export audit", () => {
       { timeout: 3000 },
     );
 
-    // Assert RPC arguments
-    const call = rpcMock.mock.calls.find(([n]) => n === "log_security_export");
-    expect(call).toBeDefined();
-    const [, args] = call!;
+    // Assert RPC arguments — both a "started" and "succeeded" outcome are logged
+    const calls = rpcMock.mock.calls.filter(([n]) => n === "log_security_export");
+    expect(calls.length).toBeGreaterThanOrEqual(2);
+    const outcomes = calls.map(([, a]) => a._filters.outcome);
+    expect(outcomes).toContain("started");
+    expect(outcomes).toContain("succeeded");
+
+    const started = calls.find(([, a]) => a._filters.outcome === "started")!;
+    const [, args] = started;
     expect(args._filters).toMatchObject({
       path: "/security/matrix",
       admin_filter: "any",
@@ -135,8 +140,8 @@ describe("/security/access-log CSV export audit", () => {
     expect(args._filters.since).toMatch(/T.*Z$/); // ISO timestamp
     expect(args._user_agent).toBe("test-agent/1.0");
 
-    // Assert audit row landed in the in-memory table
-    expect(auditRows).toHaveLength(1);
+    // Assert audit rows landed in the in-memory table (started + succeeded)
+    expect(auditRows.length).toBeGreaterThanOrEqual(2);
     expect(auditRows[0].path).toContain("/security/access-log/export");
     expect(auditRows[0].path).toContain("path=/security/matrix");
     expect(auditRows[0].user_agent).toBe("test-agent/1.0");
