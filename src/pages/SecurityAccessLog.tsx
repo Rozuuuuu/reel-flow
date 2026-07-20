@@ -153,25 +153,44 @@ export default function SecurityAccessLog() {
 
   const handleExportCsv = async () => {
     setIsExporting(true);
+    const baseFilters = {
+      user_id: userIdFilter.trim() || null,
+      since: sinceIso,
+      admin_filter: adminFilter,
+      path: pathFilter.trim() || null,
+      sort: sortKey,
+      dir: sortDir,
+    };
+    const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : null;
+    // Emit an outcome audit entry so the log records not just the attempt but
+    // whether the download actually completed. We call the RPC twice on the
+    // happy path (started + succeeded) so an audit row survives even if the
+    // browser crashes mid-download.
+    const logOutcome = async (
+      outcome: "started" | "succeeded" | "failed" | "empty",
+      extra?: Record<string, unknown>,
+    ) => {
+      try {
+        await supabase.rpc("log_security_export", {
+          _filters: { ...baseFilters, outcome, ...(extra ?? {}) },
+          _user_agent: userAgent,
+        });
+      } catch {
+        // Swallow — audit failures must never break the export UX.
+      }
+    };
+
     try {
-      // Server-side audit: record who exported which filters BEFORE running the
-      // query, so the log survives even if the export itself fails midway.
-      // The RPC is admin-gated + rate-limited (30/min/user) in the DB.
       const { error: logError } = await supabase.rpc("log_security_export", {
-        _filters: {
-          user_id: userIdFilter.trim() || null,
-          since: sinceIso,
-          admin_filter: adminFilter,
-          path: pathFilter.trim() || null,
-        },
-        _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+        _filters: { ...baseFilters, outcome: "started" },
+        _user_agent: userAgent,
       });
       if (logError) throw logError;
 
       const base = supabase
         .from("security_access_log")
         .select("id,user_id,path,was_admin,user_agent,created_at")
-        .order("created_at", { ascending: false })
+        .order(sortKey, { ascending: sortDir === "asc" })
         .limit(CSV_EXPORT_LIMIT);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await applyFilters(base, filters);
@@ -179,6 +198,7 @@ export default function SecurityAccessLog() {
       const rows = (data ?? []) as Row[];
 
       if (rows.length === 0) {
+        await logOutcome("empty", { rows: 0 });
         toast({ title: "Nothing to export", description: "No entries match the current filters." });
         return;
       }
@@ -192,6 +212,7 @@ export default function SecurityAccessLog() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+      await logOutcome("succeeded", { rows: rows.length, capped: rows.length >= CSV_EXPORT_LIMIT });
       toast({
         title: "Export ready",
         description:
@@ -200,6 +221,9 @@ export default function SecurityAccessLog() {
             : `Exported ${rows.length} row${rows.length === 1 ? "" : "s"}.`,
       });
     } catch (err) {
+      await logOutcome("failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       toast({
         title: "Export failed",
         description: err instanceof Error ? err.message : "Unknown error",
@@ -208,6 +232,27 @@ export default function SecurityAccessLog() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const SortHeader = ({ label, k }: { label: string; k: SortKey }) => {
+    const active = sortKey === k;
+    const Icon = !active ? ArrowUpDown : sortDir === "asc" ? ArrowUp : ArrowDown;
+    return (
+      <th className="px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setSort(k)}
+          aria-label={`Sort by ${label}`}
+          aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+          className={`inline-flex items-center gap-1 uppercase tracking-wider ${
+            active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {label}
+          <Icon className="h-3 w-3" />
+        </button>
+      </th>
+    );
   };
 
   return (
