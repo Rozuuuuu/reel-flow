@@ -353,10 +353,10 @@ export default function SecurityAccessLog() {
                 <table className="w-full min-w-[820px] text-left text-sm">
                   <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-3">When</th>
-                      <th className="px-4 py-3">User</th>
-                      <th className="px-4 py-3">Path</th>
-                      <th className="px-4 py-3">Admin?</th>
+                      <SortHeader label="When" k="created_at" />
+                      <SortHeader label="User" k="user_id" />
+                      <SortHeader label="Path" k="path" />
+                      <SortHeader label="Admin?" k="was_admin" />
                       <th className="px-4 py-3">User agent</th>
                     </tr>
                   </thead>
