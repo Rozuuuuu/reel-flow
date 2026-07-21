@@ -53,6 +53,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/security/access-log" element={<RequireAdmin><SecurityAccessLog /></RequireAdmin>} />
+              <Route path="/security/exports" element={<RequireAdmin><SecurityExports /></RequireAdmin>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
