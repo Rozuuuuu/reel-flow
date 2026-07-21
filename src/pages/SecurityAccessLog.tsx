@@ -320,9 +320,17 @@ export default function SecurityAccessLog() {
             </Select>
           </div>
           <div className="flex items-end gap-2">
+            <Select value={exportScope} onValueChange={(v) => setExportScope(v as "page" | "all")}>
+              <SelectTrigger aria-label="Export scope" className="w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="page">This page</SelectItem>
+                <SelectItem value="all">All matches</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="secondary"
-              className="flex-1"
               onClick={() => query.refetch()}
               disabled={query.isFetching}
             >
