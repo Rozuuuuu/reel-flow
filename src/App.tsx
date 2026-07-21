@@ -22,6 +22,7 @@ import SecurityCoverage from "./pages/SecurityCoverage.tsx";
 import SecurityMatrix from "./pages/SecurityMatrix.tsx";
 import SecurityRunbook from "./pages/SecurityRunbook.tsx";
 import SecurityAccessLog from "./pages/SecurityAccessLog.tsx";
+import SecurityExports from "./pages/SecurityExports.tsx";
 
 const queryClient = new QueryClient();
 
