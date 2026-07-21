@@ -104,6 +104,7 @@ export default function SecurityAccessLog() {
   const [pathFilter, setPathFilter] = useState("");
   const [page, setPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportScope, setExportScope] = useState<"page" | "all">("page");
 
   const sortKey: SortKey = (() => {
     const s = searchParams.get("sort");
@@ -160,12 +161,11 @@ export default function SecurityAccessLog() {
       path: pathFilter.trim() || null,
       sort: sortKey,
       dir: sortDir,
+      page,
+      page_size: PAGE_SIZE,
+      scope: exportScope,
     };
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : null;
-    // Emit an outcome audit entry so the log records not just the attempt but
-    // whether the download actually completed. We call the RPC twice on the
-    // happy path (started + succeeded) so an audit row survives even if the
-    // browser crashes mid-download.
     const logOutcome = async (
       outcome: "started" | "succeeded" | "failed" | "empty",
       extra?: Record<string, unknown>,
@@ -176,7 +176,7 @@ export default function SecurityAccessLog() {
           _user_agent: userAgent,
         });
       } catch {
-        // Swallow — audit failures must never break the export UX.
+        // Audit failures must never break the export UX.
       }
     };
 
@@ -187,13 +187,19 @@ export default function SecurityAccessLog() {
       });
       if (logError) throw logError;
 
-      const base = supabase
+      let query = supabase
         .from("security_access_log")
         .select("id,user_id,path,was_admin,user_agent,created_at")
-        .order(sortKey, { ascending: sortDir === "asc" })
-        .limit(CSV_EXPORT_LIMIT);
+        .order(sortKey, { ascending: sortDir === "asc" });
+      if (exportScope === "page") {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        query = query.range(from, to);
+      } else {
+        query = query.limit(CSV_EXPORT_LIMIT);
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await applyFilters(base, filters);
+      const { data, error } = await applyFilters(query, filters);
       if (error) throw error;
       const rows = (data ?? []) as Row[];
 
@@ -207,18 +213,19 @@ export default function SecurityAccessLog() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `security-access-log-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+      const scopeTag = exportScope === "page" ? `page-${page + 1}` : "all";
+      a.download = `security-access-log-${scopeTag}-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      await logOutcome("succeeded", { rows: rows.length, capped: rows.length >= CSV_EXPORT_LIMIT });
+      const capped = exportScope === "all" && rows.length >= CSV_EXPORT_LIMIT;
+      await logOutcome("succeeded", { rows: rows.length, capped });
       toast({
         title: "Export ready",
-        description:
-          rows.length >= CSV_EXPORT_LIMIT
-            ? `Exported ${rows.length} rows (capped). Narrow the filters to export the rest.`
-            : `Exported ${rows.length} row${rows.length === 1 ? "" : "s"}.`,
+        description: capped
+          ? `Exported ${rows.length} rows (capped). Narrow the filters to export the rest.`
+          : `Exported ${rows.length} row${rows.length === 1 ? "" : "s"} (${exportScope === "page" ? "current page" : "all matches"}).`,
       });
     } catch (err) {
       await logOutcome("failed", {
@@ -313,9 +320,17 @@ export default function SecurityAccessLog() {
             </Select>
           </div>
           <div className="flex items-end gap-2">
+            <Select value={exportScope} onValueChange={(v) => setExportScope(v as "page" | "all")}>
+              <SelectTrigger aria-label="Export scope" className="w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="page">This page</SelectItem>
+                <SelectItem value="all">All matches</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="secondary"
-              className="flex-1"
               onClick={() => query.refetch()}
               disabled={query.isFetching}
             >
@@ -421,7 +436,10 @@ export default function SecurityAccessLog() {
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground">
           <Link to="/admin/reports" className="underline">← Back to admin</Link>
-          <Link to="/security/matrix" className="underline">Security matrix →</Link>
+          <div className="flex gap-4">
+            <Link to="/security/exports" className="underline">Export audit log →</Link>
+            <Link to="/security/matrix" className="underline">Security matrix →</Link>
+          </div>
         </footer>
       </article>
     </div>

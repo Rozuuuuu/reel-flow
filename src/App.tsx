@@ -22,6 +22,7 @@ import SecurityCoverage from "./pages/SecurityCoverage.tsx";
 import SecurityMatrix from "./pages/SecurityMatrix.tsx";
 import SecurityRunbook from "./pages/SecurityRunbook.tsx";
 import SecurityAccessLog from "./pages/SecurityAccessLog.tsx";
+import SecurityExports from "./pages/SecurityExports.tsx";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/security/access-log" element={<RequireAdmin><SecurityAccessLog /></RequireAdmin>} />
+              <Route path="/security/exports" element={<RequireAdmin><SecurityExports /></RequireAdmin>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
