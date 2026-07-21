@@ -436,7 +436,10 @@ export default function SecurityAccessLog() {
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground">
           <Link to="/admin/reports" className="underline">← Back to admin</Link>
-          <Link to="/security/matrix" className="underline">Security matrix →</Link>
+          <div className="flex gap-4">
+            <Link to="/security/exports" className="underline">Export audit log →</Link>
+            <Link to="/security/matrix" className="underline">Security matrix →</Link>
+          </div>
         </footer>
       </article>
     </div>
