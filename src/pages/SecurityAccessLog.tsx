@@ -104,6 +104,7 @@ export default function SecurityAccessLog() {
   const [pathFilter, setPathFilter] = useState("");
   const [page, setPage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportScope, setExportScope] = useState<"page" | "all">("page");
 
   const sortKey: SortKey = (() => {
     const s = searchParams.get("sort");
