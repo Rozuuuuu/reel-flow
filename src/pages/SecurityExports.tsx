@@ -86,6 +86,8 @@ export default function SecurityExports() {
   const [hours, setHours] = useState(24 * 7);
   const [outcome, setOutcome] = useState<OutcomeFilter>("any");
   const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<ExportRow | null>(null);
+
 
   const sinceIso = useMemo(
     () => new Date(Date.now() - hours * 3600 * 1000).toISOString(),
