@@ -154,7 +154,14 @@ export default function SecurityAccessLog() {
 
   const handleExportCsv = async () => {
     setIsExporting(true);
+    // Correlation id shared by every audit row of this single export attempt,
+    // so support can trace started → succeeded/failed/empty as one operation.
+    const requestId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `exp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const baseFilters = {
+      request_id: requestId,
       user_id: userIdFilter.trim() || null,
       since: sinceIso,
       admin_filter: adminFilter,
@@ -165,6 +172,7 @@ export default function SecurityAccessLog() {
       page_size: PAGE_SIZE,
       scope: exportScope,
     };
+
     const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : null;
     const logOutcome = async (
       outcome: "started" | "succeeded" | "failed" | "empty",
