@@ -268,7 +268,18 @@ export default function SecurityExports() {
                               ) : null}
                             </div>
                           </td>
+                          <td className="px-4 py-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              data-testid={`details-${r.id}`}
+                              onClick={() => setSelected(r)}
+                            >
+                              View
+                            </Button>
+                          </td>
                         </tr>
+
                       );
                     })}
                   </tbody>
