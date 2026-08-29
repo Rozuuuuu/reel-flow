@@ -27,6 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+
 
 type RawRow = {
   id: string;
@@ -78,6 +86,8 @@ export default function SecurityExports() {
   const [hours, setHours] = useState(24 * 7);
   const [outcome, setOutcome] = useState<OutcomeFilter>("any");
   const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<ExportRow | null>(null);
+
 
   const sinceIso = useMemo(
     () => new Date(Date.now() - hours * 3600 * 1000).toISOString(),
@@ -197,11 +207,14 @@ export default function SecurityExports() {
                     <tr>
                       <th className="px-4 py-3">When</th>
                       <th className="px-4 py-3">User</th>
+                      <th className="px-4 py-3">Request ID</th>
                       <th className="px-4 py-3">Outcome</th>
                       <th className="px-4 py-3">Rows</th>
                       <th className="px-4 py-3">Filters / sort / page</th>
+                      <th className="px-4 py-3">Details</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {query.data.rows.map((r) => {
                       const f = r.filters ?? {};
@@ -220,7 +233,14 @@ export default function SecurityExports() {
                             {formatDistanceToNowStrict(new Date(r.created_at), { addSuffix: true })}
                           </td>
                           <td className="px-4 py-2 font-mono text-[11px]">{r.user_id ?? "—"}</td>
+                          <td
+                            className="px-4 py-2 font-mono text-[11px]"
+                            data-testid={`request-id-${r.id}`}
+                          >
+                            {typeof f.request_id === "string" ? f.request_id : "—"}
+                          </td>
                           <td className="px-4 py-2">
+
                             <span
                               className={`rounded-full border px-2 py-0.5 text-[11px] uppercase ${
                                 OUTCOME_STYLE[r.outcome] ?? "border-border bg-muted text-muted-foreground"
@@ -248,7 +268,18 @@ export default function SecurityExports() {
                               ) : null}
                             </div>
                           </td>
+                          <td className="px-4 py-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              data-testid={`details-${r.id}`}
+                              onClick={() => setSelected(r)}
+                            >
+                              View
+                            </Button>
+                          </td>
                         </tr>
+
                       );
                     })}
                   </tbody>
@@ -286,10 +317,87 @@ export default function SecurityExports() {
           )}
         </section>
 
+        <Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+          <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
+            <SheetHeader>
+              <SheetTitle>Export attempt details</SheetTitle>
+              <SheetDescription>
+                Exact audit payload recorded server-side for this export attempt.
+              </SheetDescription>
+            </SheetHeader>
+            {selected ? (
+              <div className="mt-6 space-y-5 text-sm" data-testid="export-details">
+                <dl className="grid grid-cols-2 gap-3 font-mono text-[11px]">
+                  <div>
+                    <dt className="text-muted-foreground">Request ID</dt>
+                    <dd className="break-all">{String(selected.filters?.request_id ?? "—")}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Outcome</dt>
+                    <dd>{selected.outcome}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">User</dt>
+                    <dd className="break-all">{selected.user_id ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">When</dt>
+                    <dd>{new Date(selected.created_at).toISOString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Sort</dt>
+                    <dd>
+                      {selected.filters?.sort
+                        ? `${selected.filters.sort} ${selected.filters.dir ?? ""}`
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Pagination</dt>
+                    <dd>
+                      page {typeof selected.filters?.page === "number" ? selected.filters.page + 1 : "—"} ·
+                      size {String(selected.filters?.page_size ?? "—")}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Scope</dt>
+                    <dd>{String(selected.filters?.scope ?? "—")}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Rows</dt>
+                    <dd>
+                      {String(selected.filters?.rows ?? "—")}
+                      {selected.filters?.capped ? " (capped)" : ""}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">User agent</p>
+                  <p className="break-all font-mono text-[11px]">{selected.user_agent ?? "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Logged path</p>
+                  <p className="break-all font-mono text-[11px]">{selected.path}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Raw payload</p>
+                  <pre
+                    data-testid="export-details-json"
+                    className="max-h-72 overflow-auto rounded-lg border border-border bg-muted/30 p-3 font-mono text-[11px]"
+                  >
+{JSON.stringify(selected.filters ?? {}, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ) : null}
+          </SheetContent>
+        </Sheet>
+
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground">
           <Link to="/security/access-log" className="underline">← Access log</Link>
           <Link to="/admin/reports" className="underline">Admin →</Link>
         </footer>
+
       </article>
     </div>
   );
