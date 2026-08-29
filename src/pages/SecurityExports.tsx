@@ -233,7 +233,14 @@ export default function SecurityExports() {
                             {formatDistanceToNowStrict(new Date(r.created_at), { addSuffix: true })}
                           </td>
                           <td className="px-4 py-2 font-mono text-[11px]">{r.user_id ?? "—"}</td>
+                          <td
+                            className="px-4 py-2 font-mono text-[11px]"
+                            data-testid={`request-id-${r.id}`}
+                          >
+                            {typeof f.request_id === "string" ? f.request_id : "—"}
+                          </td>
                           <td className="px-4 py-2">
+
                             <span
                               className={`rounded-full border px-2 py-0.5 text-[11px] uppercase ${
                                 OUTCOME_STYLE[r.outcome] ?? "border-border bg-muted text-muted-foreground"
