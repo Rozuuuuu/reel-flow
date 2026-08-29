@@ -317,10 +317,87 @@ export default function SecurityExports() {
           )}
         </section>
 
+        <Sheet open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+          <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
+            <SheetHeader>
+              <SheetTitle>Export attempt details</SheetTitle>
+              <SheetDescription>
+                Exact audit payload recorded server-side for this export attempt.
+              </SheetDescription>
+            </SheetHeader>
+            {selected ? (
+              <div className="mt-6 space-y-5 text-sm" data-testid="export-details">
+                <dl className="grid grid-cols-2 gap-3 font-mono text-[11px]">
+                  <div>
+                    <dt className="text-muted-foreground">Request ID</dt>
+                    <dd className="break-all">{String(selected.filters?.request_id ?? "—")}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Outcome</dt>
+                    <dd>{selected.outcome}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">User</dt>
+                    <dd className="break-all">{selected.user_id ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">When</dt>
+                    <dd>{new Date(selected.created_at).toISOString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Sort</dt>
+                    <dd>
+                      {selected.filters?.sort
+                        ? `${selected.filters.sort} ${selected.filters.dir ?? ""}`
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Pagination</dt>
+                    <dd>
+                      page {typeof selected.filters?.page === "number" ? selected.filters.page + 1 : "—"} ·
+                      size {String(selected.filters?.page_size ?? "—")}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Scope</dt>
+                    <dd>{String(selected.filters?.scope ?? "—")}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Rows</dt>
+                    <dd>
+                      {String(selected.filters?.rows ?? "—")}
+                      {selected.filters?.capped ? " (capped)" : ""}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">User agent</p>
+                  <p className="break-all font-mono text-[11px]">{selected.user_agent ?? "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Logged path</p>
+                  <p className="break-all font-mono text-[11px]">{selected.path}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Raw payload</p>
+                  <pre
+                    data-testid="export-details-json"
+                    className="max-h-72 overflow-auto rounded-lg border border-border bg-muted/30 p-3 font-mono text-[11px]"
+                  >
+{JSON.stringify(selected.filters ?? {}, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ) : null}
+          </SheetContent>
+        </Sheet>
+
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground">
           <Link to="/security/access-log" className="underline">← Access log</Link>
           <Link to="/admin/reports" className="underline">Admin →</Link>
         </footer>
+
       </article>
     </div>
   );
