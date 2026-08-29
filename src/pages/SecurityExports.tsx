@@ -207,11 +207,14 @@ export default function SecurityExports() {
                     <tr>
                       <th className="px-4 py-3">When</th>
                       <th className="px-4 py-3">User</th>
+                      <th className="px-4 py-3">Request ID</th>
                       <th className="px-4 py-3">Outcome</th>
                       <th className="px-4 py-3">Rows</th>
                       <th className="px-4 py-3">Filters / sort / page</th>
+                      <th className="px-4 py-3">Details</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {query.data.rows.map((r) => {
                       const f = r.filters ?? {};
