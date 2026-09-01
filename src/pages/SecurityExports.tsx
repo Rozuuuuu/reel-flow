@@ -81,12 +81,25 @@ function parseFilters(path: string): { filters: Record<string, unknown> | null; 
 }
 
 export default function SecurityExports() {
-  const [userIdFilter, setUserIdFilter] = useState("");
-  const [pathFilter, setPathFilter] = useState("");
-  const [hours, setHours] = useState(24 * 7);
-  const [outcome, setOutcome] = useState<OutcomeFilter>("any");
-  const [page, setPage] = useState(0);
+  // Filters + pagination live in the URL so views are shareable/bookmarkable
+  // (and testable without driving the Radix listbox UI).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const userIdFilter = searchParams.get("user") ?? "";
+  const pathFilter = searchParams.get("path") ?? "";
+  const hours = Number(searchParams.get("hours")) > 0 ? Number(searchParams.get("hours")) : 24 * 7;
+  const outcome = (searchParams.get("outcome") as OutcomeFilter) || "any";
+  const page = Math.max(0, Number(searchParams.get("page") ?? 0) || 0);
   const [selected, setSelected] = useState<ExportRow | null>(null);
+
+  const patchParams = (patch: Record<string, string | number | null>) => {
+    const next = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null || value === "" || value === "any") next.delete(key);
+      else next.set(key, String(value));
+    }
+    setSearchParams(next, { replace: true });
+  };
+
 
 
   const sinceIso = useMemo(
