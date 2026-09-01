@@ -12,7 +12,7 @@
  * `path`), and time window.
  */
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -136,7 +136,6 @@ export default function SecurityExports() {
 
   const total = query.data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const resetPage = () => setPage(0);
 
   return (
     <div className="min-h-screen bg-background px-4 py-10 md:px-10">
@@ -159,7 +158,7 @@ export default function SecurityExports() {
               id="user-id"
               placeholder="uuid or blank for all"
               value={userIdFilter}
-              onChange={(e) => { setUserIdFilter(e.target.value); resetPage(); }}
+              onChange={(e) => patchParams({ user: e.target.value, page: null })}
               className="font-mono text-xs"
             />
           </div>
@@ -169,13 +168,13 @@ export default function SecurityExports() {
               id="path-filter"
               placeholder="e.g. /security/matrix"
               value={pathFilter}
-              onChange={(e) => { setPathFilter(e.target.value); resetPage(); }}
+              onChange={(e) => patchParams({ path: e.target.value, page: null })}
               className="font-mono text-xs"
             />
           </div>
           <div className="space-y-1">
             <Label>Time window</Label>
-            <Select value={String(hours)} onValueChange={(v) => { setHours(Number(v)); resetPage(); }}>
+            <Select value={String(hours)} onValueChange={(v) => patchParams({ hours: v, page: null })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {WINDOWS.map((w) => (
@@ -186,7 +185,7 @@ export default function SecurityExports() {
           </div>
           <div className="space-y-1">
             <Label>Outcome</Label>
-            <Select value={outcome} onValueChange={(v) => { setOutcome(v as OutcomeFilter); resetPage(); }}>
+            <Select value={outcome} onValueChange={(v) => patchParams({ outcome: v, page: null })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Any</SelectItem>
@@ -309,7 +308,7 @@ export default function SecurityExports() {
                     size="sm"
                     variant="outline"
                     disabled={page === 0 || query.isFetching}
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    onClick={() => patchParams({ page: Math.max(0, page - 1) || null })}
                   >
                     Previous
                   </Button>
@@ -320,7 +319,7 @@ export default function SecurityExports() {
                     size="sm"
                     variant="outline"
                     disabled={page + 1 >= totalPages || query.isFetching}
-                    onClick={() => setPage((p) => p + 1)}
+                    onClick={() => patchParams({ page: page + 1 })}
                   >
                     Next
                   </Button>
