@@ -12,7 +12,7 @@
  * `path`), and time window.
  */
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -81,12 +81,25 @@ function parseFilters(path: string): { filters: Record<string, unknown> | null; 
 }
 
 export default function SecurityExports() {
-  const [userIdFilter, setUserIdFilter] = useState("");
-  const [pathFilter, setPathFilter] = useState("");
-  const [hours, setHours] = useState(24 * 7);
-  const [outcome, setOutcome] = useState<OutcomeFilter>("any");
-  const [page, setPage] = useState(0);
+  // Filters + pagination live in the URL so views are shareable/bookmarkable
+  // (and testable without driving the Radix listbox UI).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const userIdFilter = searchParams.get("user") ?? "";
+  const pathFilter = searchParams.get("path") ?? "";
+  const hours = Number(searchParams.get("hours")) > 0 ? Number(searchParams.get("hours")) : 24 * 7;
+  const outcome = (searchParams.get("outcome") as OutcomeFilter) || "any";
+  const page = Math.max(0, Number(searchParams.get("page") ?? 0) || 0);
   const [selected, setSelected] = useState<ExportRow | null>(null);
+
+  const patchParams = (patch: Record<string, string | number | null>) => {
+    const next = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null || value === "" || value === "any") next.delete(key);
+      else next.set(key, String(value));
+    }
+    setSearchParams(next, { replace: true });
+  };
+
 
 
   const sinceIso = useMemo(
@@ -104,14 +117,15 @@ export default function SecurityExports() {
         .from("security_access_log")
         .select("id,user_id,path,user_agent,created_at", { count: "exact" })
         .ilike("path", `${EXPORT_PATH_PREFIX}%`)
-        .gte("created_at", sinceIso)
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .gte("created_at", sinceIso);
       if (userIdFilter.trim()) q = q.eq("user_id", userIdFilter.trim());
       if (outcome !== "any") q = q.ilike("path", `%\"outcome\":\"${outcome}\"%`);
       if (pathFilter.trim()) q = q.ilike("path", `%\"path\":\"%${pathFilter.trim()}%\"%`);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error, count } = await (q as any);
+      const { data, error, count } = await (q
+        .order("created_at", { ascending: false })
+        .range(from, to) as any);
+
       if (error) throw error;
       const rows = ((data ?? []) as RawRow[]).map<ExportRow>((r) => ({
         ...r,
@@ -123,7 +137,6 @@ export default function SecurityExports() {
 
   const total = query.data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const resetPage = () => setPage(0);
 
   return (
     <div className="min-h-screen bg-background px-4 py-10 md:px-10">
@@ -146,7 +159,7 @@ export default function SecurityExports() {
               id="user-id"
               placeholder="uuid or blank for all"
               value={userIdFilter}
-              onChange={(e) => { setUserIdFilter(e.target.value); resetPage(); }}
+              onChange={(e) => patchParams({ user: e.target.value, page: null })}
               className="font-mono text-xs"
             />
           </div>
@@ -156,13 +169,13 @@ export default function SecurityExports() {
               id="path-filter"
               placeholder="e.g. /security/matrix"
               value={pathFilter}
-              onChange={(e) => { setPathFilter(e.target.value); resetPage(); }}
+              onChange={(e) => patchParams({ path: e.target.value, page: null })}
               className="font-mono text-xs"
             />
           </div>
           <div className="space-y-1">
             <Label>Time window</Label>
-            <Select value={String(hours)} onValueChange={(v) => { setHours(Number(v)); resetPage(); }}>
+            <Select value={String(hours)} onValueChange={(v) => patchParams({ hours: v, page: null })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {WINDOWS.map((w) => (
@@ -173,7 +186,7 @@ export default function SecurityExports() {
           </div>
           <div className="space-y-1">
             <Label>Outcome</Label>
-            <Select value={outcome} onValueChange={(v) => { setOutcome(v as OutcomeFilter); resetPage(); }}>
+            <Select value={outcome} onValueChange={(v) => patchParams({ outcome: v, page: null })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Any</SelectItem>
@@ -296,7 +309,7 @@ export default function SecurityExports() {
                     size="sm"
                     variant="outline"
                     disabled={page === 0 || query.isFetching}
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    onClick={() => patchParams({ page: Math.max(0, page - 1) || null })}
                   >
                     Previous
                   </Button>
@@ -307,7 +320,7 @@ export default function SecurityExports() {
                     size="sm"
                     variant="outline"
                     disabled={page + 1 >= totalPages || query.isFetching}
-                    onClick={() => setPage((p) => p + 1)}
+                    onClick={() => patchParams({ page: page + 1 })}
                   >
                     Next
                   </Button>

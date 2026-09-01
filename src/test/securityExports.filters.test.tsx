@@ -81,11 +81,11 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import SecurityExports from "@/pages/SecurityExports";
 
-function renderPage() {
+function renderPage(search = "") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[`/security/exports${search}`]}>
         <SecurityExports />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -100,6 +100,14 @@ const rowIds = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // jsdom lacks these DOM APIs that Radix Select touches when opened.
+  Element.prototype.scrollIntoView = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (Element.prototype as any).hasPointerCapture = vi.fn(() => false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (Element.prototype as any).setPointerCapture = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (Element.prototype as any).releasePointerCapture = vi.fn();
 });
 
 describe("/security/exports filtering", () => {
@@ -108,41 +116,43 @@ describe("/security/exports filtering", () => {
     await waitFor(() => expect(rowIds()).toEqual(["req-a", "req-b", "req-c"]));
   });
 
-  it("filters by user id", async () => {
+  it("filters by user id via URL query params", async () => {
+    renderPage("?user=user-1");
+    await waitFor(() => expect(rowIds()).toEqual(["req-a", "req-c"]));
+  });
+
+  it("filters by path substring via URL query params", async () => {
+    renderPage("?path=/security/runbook");
+    await waitFor(() => expect(rowIds()).toEqual(["req-c"]));
+  });
+
+  it("typing a user filter pushes it into the URL and refilters", async () => {
     renderPage();
     await waitFor(() => expect(rowIds().length).toBe(3));
     fireEvent.change(screen.getByLabelText("User ID"), { target: { value: "user-1" } });
     await waitFor(() => expect(rowIds()).toEqual(["req-a", "req-c"]));
   });
 
-  it("filters by path substring", async () => {
-    renderPage();
-    await waitFor(() => expect(rowIds().length).toBe(3));
-    fireEvent.change(screen.getByLabelText("Path filter contains"), {
-      target: { value: "/security/runbook" },
-    });
-    await waitFor(() => expect(rowIds()).toEqual(["req-c"]));
-  });
-
-  it("filters by outcome", async () => {
-    renderPage();
-    await waitFor(() => expect(rowIds().length).toBe(3));
-    // Outcome select: open and choose "Failed"
-    fireEvent.keyDown(screen.getAllByRole("combobox")[1], { key: "Enter" });
-    await waitFor(() => expect(screen.getByRole("option", { name: "Failed" })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("option", { name: "Failed" }));
+  it("filters by outcome via URL query params", async () => {
+    renderPage("?outcome=failed");
     await waitFor(() => expect(rowIds()).toEqual(["req-b"]));
   });
 
-  it("widening the time window reveals older entries", async () => {
-    renderPage();
-    await waitFor(() => expect(rowIds().length).toBe(3));
-    fireEvent.keyDown(screen.getAllByRole("combobox")[0], { key: "Enter" });
-    await waitFor(() =>
-      expect(screen.getByRole("option", { name: "Last 30 days" })).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByRole("option", { name: "Last 30 days" }));
+  it("widening the time window via URL query params reveals older entries", async () => {
+    renderPage("?hours=720");
     await waitFor(() => expect(rowIds()).toEqual(["req-a", "req-b", "req-c", "req-d"]));
+  });
+
+  it("combines user, path and outcome params", async () => {
+    renderPage("?user=user-1&path=/security/runbook&outcome=succeeded");
+    await waitFor(() => expect(rowIds()).toEqual(["req-c"]));
+  });
+
+  it("pagination page param is applied to the query range", async () => {
+    renderPage("?page=1");
+    await waitFor(() =>
+      expect(screen.getByText("No export attempts match these filters.")).toBeInTheDocument(),
+    );
   });
 
   it("details drawer shows the exact audit payload and request id", async () => {
