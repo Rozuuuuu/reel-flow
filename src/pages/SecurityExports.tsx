@@ -117,14 +117,15 @@ export default function SecurityExports() {
         .from("security_access_log")
         .select("id,user_id,path,user_agent,created_at", { count: "exact" })
         .ilike("path", `${EXPORT_PATH_PREFIX}%`)
-        .gte("created_at", sinceIso)
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .gte("created_at", sinceIso);
       if (userIdFilter.trim()) q = q.eq("user_id", userIdFilter.trim());
       if (outcome !== "any") q = q.ilike("path", `%\"outcome\":\"${outcome}\"%`);
       if (pathFilter.trim()) q = q.ilike("path", `%\"path\":\"%${pathFilter.trim()}%\"%`);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error, count } = await (q as any);
+      const { data, error, count } = await (q
+        .order("created_at", { ascending: false })
+        .range(from, to) as any);
+
       if (error) throw error;
       const rows = ((data ?? []) as RawRow[]).map<ExportRow>((r) => ({
         ...r,
