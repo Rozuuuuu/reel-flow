@@ -422,6 +422,57 @@ export type Database = {
         }
         Relationships: []
       }
+      security_scans: {
+        Row: {
+          baseline_diff: string
+          completed_at: string | null
+          details: Json
+          findings_critical: number
+          findings_high: number
+          findings_total: number
+          id: string
+          notes: string | null
+          open_issues: number
+          ran_by: string | null
+          scanner: string
+          started_at: string
+          status: string
+          suite: string
+        }
+        Insert: {
+          baseline_diff?: string
+          completed_at?: string | null
+          details?: Json
+          findings_critical?: number
+          findings_high?: number
+          findings_total?: number
+          id?: string
+          notes?: string | null
+          open_issues?: number
+          ran_by?: string | null
+          scanner: string
+          started_at?: string
+          status?: string
+          suite?: string
+        }
+        Update: {
+          baseline_diff?: string
+          completed_at?: string | null
+          details?: Json
+          findings_critical?: number
+          findings_high?: number
+          findings_total?: number
+          id?: string
+          notes?: string | null
+          open_issues?: number
+          ran_by?: string | null
+          scanner?: string
+          started_at?: string
+          status?: string
+          suite?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -506,6 +557,22 @@ export type Database = {
       log_security_export: {
         Args: { _filters?: Json; _user_agent?: string }
         Returns: undefined
+      }
+      log_security_scan: {
+        Args: {
+          _baseline_diff?: string
+          _details?: Json
+          _findings_critical?: number
+          _findings_high?: number
+          _findings_total?: number
+          _notes?: string
+          _open_issues?: number
+          _scanner: string
+          _status?: string
+          _suite?: string
+          _user_agent?: string
+        }
+        Returns: string
       }
       security_matrix_access_check: {
         Args: { _user_agent?: string }
