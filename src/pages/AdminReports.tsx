@@ -224,6 +224,13 @@ export default function AdminReports() {
         {isAdmin && (
           <nav aria-label="Admin tools" className="flex flex-wrap items-center gap-2 text-xs">
             <Link
+              to="/security/dashboard"
+              className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Security dashboard
+            </Link>
+            <Link
               to="/security/matrix"
               className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-muted-foreground transition hover:text-foreground"
             >

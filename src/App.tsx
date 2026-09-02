@@ -23,6 +23,7 @@ import SecurityMatrix from "./pages/SecurityMatrix.tsx";
 import SecurityRunbook from "./pages/SecurityRunbook.tsx";
 import SecurityAccessLog from "./pages/SecurityAccessLog.tsx";
 import SecurityExports from "./pages/SecurityExports.tsx";
+import SecurityDashboard from "./pages/SecurityDashboard.tsx";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/upload" element={<Upload />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin/reports" element={<AdminReports />} />
+              <Route path="/security/dashboard" element={<RequireAdmin><SecurityDashboard /></RequireAdmin>} />
               <Route path="/security/access-log" element={<RequireAdmin><SecurityAccessLog /></RequireAdmin>} />
               <Route path="/security/exports" element={<RequireAdmin><SecurityExports /></RequireAdmin>} />
             </Route>
