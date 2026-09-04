@@ -1,7 +1,7 @@
 # Security Runbook
 
 Operational guide for running the security suite, reading baseline diffs, and
-unblocking CI. Last verified end-to-end on **2026-09-02** against the live
+unblocking CI. Last verified end-to-end on **2026-09-04** against the live
 backend (results recorded in `/security/dashboard`).
 
 Companion surfaces:
@@ -54,7 +54,7 @@ bunx playwright test
 
 Backend-side scans (run from the Lovable agent, not the shell):
 
-| Scan | What it covers | 2026-09-02 result |
+| Scan | What it covers | 2026-09-04 result |
 | --- | --- | --- |
 | `run_security_scan` | Exposed data, missing RLS, misconfiguration | 0 findings |
 | `linter` | Postgres security/performance advisories | 0 findings |
@@ -137,7 +137,7 @@ writes that file before the diff step, so a missing file locally is normal.
    field, and call it out in the PR description. Unjustified baseline
    additions are rejected in review.
 
-Matrix ↔ baseline reconciliation on 2026-09-02: baseline holds 0 accepted
+Matrix ↔ baseline reconciliation on 2026-09-04: baseline holds 0 accepted
 findings and the live scan returned 0 findings, so every matrix row is backed
 by an active policy with no accepted exceptions outstanding.
 
