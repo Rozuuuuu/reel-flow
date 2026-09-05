@@ -242,6 +242,30 @@ export type Database = {
           },
         ]
       }
+      matrix_expected_grants: {
+        Row: {
+          created_at: string
+          grantee: string
+          privileges: string[]
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grantee: string
+          privileges: string[]
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grantee?: string
+          privileges?: string[]
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -422,6 +446,89 @@ export type Database = {
         }
         Relationships: []
       }
+      security_alert_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          notify_drift: boolean
+          notify_failed: boolean
+          notify_pending: boolean
+          pending_after_minutes: number
+          recipients: string[]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notify_drift?: boolean
+          notify_failed?: boolean
+          notify_pending?: boolean
+          pending_after_minutes?: number
+          recipients?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notify_drift?: boolean
+          notify_failed?: boolean
+          notify_pending?: boolean
+          pending_after_minutes?: number
+          recipients?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      security_alerts_sent: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          provider_id: string | null
+          recipients: string[]
+          scan_id: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          provider_id?: string | null
+          recipients?: string[]
+          scan_id?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          provider_id?: string | null
+          recipients?: string[]
+          scan_id?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_alerts_sent_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "security_scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_scans: {
         Row: {
           baseline_diff: string
@@ -573,6 +680,16 @@ export type Database = {
           _user_agent?: string
         }
         Returns: string
+      }
+      matrix_grant_drift: {
+        Args: never
+        Returns: {
+          actual: string[]
+          expected: string[]
+          grantee: string
+          status: string
+          table_name: string
+        }[]
       }
       security_matrix_access_check: {
         Args: { _user_agent?: string }
