@@ -242,6 +242,30 @@ export type Database = {
           },
         ]
       }
+      matrix_expected_grants: {
+        Row: {
+          created_at: string
+          grantee: string
+          privileges: string[]
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grantee: string
+          privileges: string[]
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grantee?: string
+          privileges?: string[]
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -573,6 +597,16 @@ export type Database = {
           _user_agent?: string
         }
         Returns: string
+      }
+      matrix_grant_drift: {
+        Args: never
+        Returns: {
+          actual: string[]
+          expected: string[]
+          grantee: string
+          status: string
+          table_name: string
+        }[]
       }
       security_matrix_access_check: {
         Args: { _user_agent?: string }
