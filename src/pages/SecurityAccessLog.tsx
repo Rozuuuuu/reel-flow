@@ -195,10 +195,16 @@ export default function SecurityAccessLog() {
       });
       if (logError) throw logError;
 
-      let query = supabase
-        .from("security_access_log")
-        .select("id,user_id,path,was_admin,user_agent,created_at")
-        .order(sortKey, { ascending: sortDir === "asc" });
+      // Filters first, then ordering + range/limit — PostgREST requires the
+      // range/limit call to be terminal.
+      let query = applyFilters(
+        supabase
+          .from("security_access_log")
+          .select("id,user_id,path,was_admin,user_agent,created_at"),
+        filters,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ) as any;
+      query = query.order(sortKey, { ascending: sortDir === "asc" });
       if (exportScope === "page") {
         const from = page * PAGE_SIZE;
         const to = from + PAGE_SIZE - 1;
@@ -206,9 +212,9 @@ export default function SecurityAccessLog() {
       } else {
         query = query.limit(CSV_EXPORT_LIMIT);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await applyFilters(query, filters);
+      const { data, error } = await query;
       if (error) throw error;
+
       const rows = (data ?? []) as Row[];
 
       if (rows.length === 0) {
