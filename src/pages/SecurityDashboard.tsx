@@ -24,6 +24,7 @@ import {
 import { formatDistanceToNowStrict } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SecurityAlertSettingsCard } from "@/components/SecurityAlertSettingsCard";
 
 interface ScanRow {
   id: string;
