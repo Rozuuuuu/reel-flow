@@ -24,6 +24,7 @@ import {
 import { formatDistanceToNowStrict } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SecurityAlertSettingsCard } from "@/components/SecurityAlertSettingsCard";
 
 interface ScanRow {
   id: string;
@@ -275,6 +276,8 @@ const SecurityDashboard = () => {
                 ))}
               </section>
             )}
+
+            <SecurityAlertSettingsCard />
 
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Timeline</h2>
