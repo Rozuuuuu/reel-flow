@@ -277,6 +277,8 @@ const SecurityDashboard = () => {
               </section>
             )}
 
+            <SecurityAlertSettingsCard />
+
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Timeline</h2>
               {summary.finished.length === 0 ? (
