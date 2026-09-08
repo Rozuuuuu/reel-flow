@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       .order('started_at', { ascending: false })
       .limit(50);
 
-    const candidates: { kind: string; scan: ScanRow }[] = [];
+    const candidates: { kind: string; scan: ScanRow | null }[] = [];
     for (const s of (scans ?? []) as ScanRow[]) {
       if (s.status === 'failed' && settings.notify_failed) {
         candidates.push({ kind: 'failed', scan: s });
@@ -159,14 +159,14 @@ Deno.serve(async (req) => {
 
       if (!lovableKey || !resendKey) {
         await admin.from('security_alerts_sent').insert({
-          scan_id: scan.id,
+          scan_id: scanId,
           kind,
           recipients,
           subject,
           status: 'failed',
           error: 'Email sender not connected (RESEND_API_KEY missing)',
         });
-        results.push({ scan: scan.id, kind, status: 'failed', error: 'no_email_sender' });
+        results.push({ scan: scanId, kind, status: 'failed', error: 'no_email_sender' });
         continue;
       }
 
@@ -189,20 +189,20 @@ Deno.serve(async (req) => {
         const errorBody = await res.text();
         console.error(`Resend request failed [${res.status}]: ${errorBody}`);
         await admin.from('security_alerts_sent').insert({
-          scan_id: scan.id,
+          scan_id: scanId,
           kind,
           recipients,
           subject,
           status: 'failed',
           error: `[${res.status}] ${errorBody}`.slice(0, 1000),
         });
-        results.push({ scan: scan.id, kind, status: 'failed', http: res.status });
+        results.push({ scan: scanId, kind, status: 'failed', http: res.status });
         continue;
       }
 
       const payload = await res.json();
       await admin.from('security_alerts_sent').insert({
-        scan_id: scan.id,
+        scan_id: scanId,
         kind,
         recipients,
         subject,
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
         provider_id: payload?.id ?? null,
       });
       sent += 1;
-      results.push({ scan: scan.id, kind, status: 'sent' });
+      results.push({ scan: scanId, kind, status: 'sent' });
     }
 
     return json({ sent, considered: candidates.length, results });
