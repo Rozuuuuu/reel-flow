@@ -47,6 +47,26 @@ const bodyFor = (kind: string, scan: ScanRow) => {
   return { subject: title, html };
 };
 
+const driftBody = (
+  rows: { table_name: string; grantee: string; status: string }[],
+) => {
+  const subject = `Security alert: ${rows.length} permission drift issue${rows.length === 1 ? '' : 's'}`;
+  const html = `
+    <h2>${esc(subject)}</h2>
+    <p>Live table permissions no longer match the expected security matrix.</p>
+    <ul>
+      ${rows
+        .map(
+          (r) =>
+            `<li><strong>${esc(r.table_name)}</strong> · ${esc(r.grantee)} — ${esc(r.status)}</li>`,
+        )
+        .join('')}
+    </ul>
+  `;
+  return { subject, html };
+};
+
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
