@@ -142,15 +142,20 @@ Deno.serve(async (req) => {
 
 
     for (const { kind, scan } of candidates) {
-      const { data: already } = await admin
-        .from('security_alerts_sent')
-        .select('id')
-        .eq('scan_id', scan.id)
-        .eq('kind', kind)
-        .maybeSingle();
-      if (already) continue;
+      const scanId = scan?.id ?? null;
+      if (scanId) {
+        const { data: already } = await admin
+          .from('security_alerts_sent')
+          .select('id')
+          .eq('scan_id', scanId)
+          .eq('kind', kind)
+          .maybeSingle();
+        if (already) continue;
+      }
 
-      const { subject, html } = bodyFor(kind, scan);
+      const { subject, html } =
+        kind === 'drift' ? driftBody(driftRows) : bodyFor(kind, scan!);
+
 
       if (!lovableKey || !resendKey) {
         await admin.from('security_alerts_sent').insert({
