@@ -529,6 +529,33 @@ export type Database = {
           },
         ]
       }
+      security_rate_limits: {
+        Row: {
+          bucket: string
+          created_at: string
+          description: string | null
+          limit_per_min: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          description?: string | null
+          limit_per_min: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          description?: string | null
+          limit_per_min?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       security_scans: {
         Row: {
           baseline_diff: string
@@ -646,6 +673,19 @@ export type Database = {
     }
     Functions: {
       can_view_video: { Args: { _video_id: string }; Returns: boolean }
+      complete_security_scan: {
+        Args: {
+          _baseline_diff?: string
+          _findings_critical?: number
+          _findings_high?: number
+          _findings_total?: number
+          _notes?: string
+          _open_issues?: number
+          _scan_id: string
+          _status?: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -691,6 +731,7 @@ export type Database = {
           table_name: string
         }[]
       }
+      run_drift_scan: { Args: { _user_agent?: string }; Returns: string }
       security_matrix_access_check: {
         Args: { _user_agent?: string }
         Returns: boolean
