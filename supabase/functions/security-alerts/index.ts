@@ -111,6 +111,27 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Permission drift: compare live grants to the expected matrix.
+    let driftRows: { table_name: string; grantee: string; status: string }[] = [];
+    if (settings.notify_drift) {
+      const { data: drift } = await userClient.rpc('matrix_grant_drift');
+      driftRows = ((drift ?? []) as typeof driftRows).filter(
+        (d) => d.status !== 'ok',
+      );
+      if (driftRows.length > 0) {
+        const since = new Date(Date.now() - 60 * 60_000).toISOString();
+        const { data: recentDrift } = await admin
+          .from('security_alerts_sent')
+          .select('id')
+          .eq('kind', 'drift')
+          .gte('created_at', since)
+          .limit(1);
+        if (!recentDrift || recentDrift.length === 0) {
+          candidates.push({ kind: 'drift', scan: null });
+        }
+      }
+    }
+
     if (candidates.length === 0) return json({ sent: 0, skipped: 'nothing_to_alert' });
 
     const lovableKey = Deno.env.get('LOVABLE_API_KEY');
@@ -118,6 +139,7 @@ Deno.serve(async (req) => {
 
     let sent = 0;
     const results: unknown[] = [];
+
 
     for (const { kind, scan } of candidates) {
       const { data: already } = await admin
