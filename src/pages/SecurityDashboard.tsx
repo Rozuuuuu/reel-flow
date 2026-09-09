@@ -232,7 +232,31 @@ const SecurityDashboard = () => {
               </Link>
             ))}
           </nav>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button size="sm" onClick={queueScan} disabled={busy !== null}>
+              {busy === "scan" ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Clock className="mr-2 h-3.5 w-3.5" />
+              )}
+              Queue a scan
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={runDrift}
+              disabled={busy !== null}
+            >
+              {busy === "drift" ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShieldAlert className="mr-2 h-3.5 w-3.5" />
+              )}
+              Run permission drift check
+            </Button>
+          </div>
         </header>
+
 
         {isLoading && (
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-6 text-sm text-muted-foreground">
