@@ -126,6 +126,68 @@ const SecurityDashboard = () => {
     };
   }, [scans]);
 
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState<null | "scan" | "drift">(null);
+
+  const runAlerts = async () => {
+    const { data, error: fnError } = await supabase.functions.invoke(
+      "security-alerts",
+    );
+    if (fnError) {
+      toast.error("Alert check failed", { description: fnError.message });
+      return;
+    }
+    const sent = (data as { sent?: number } | null)?.sent ?? 0;
+    const skipped = (data as { skipped?: string } | null)?.skipped;
+    toast.success(
+      sent > 0
+        ? `${sent} alert email${sent === 1 ? "" : "s"} sent`
+        : `No alerts sent${skipped ? ` (${skipped})` : ""}`,
+    );
+  };
+
+  const queueScan = async () => {
+    setBusy("scan");
+    try {
+      const { error: rpcError } = await supabase.rpc("log_security_scan", {
+        _scanner: "helper-access-suite",
+        _status: "pending",
+        _suite: "security-definer",
+        _notes: "Queued from the security dashboard.",
+        _user_agent: navigator.userAgent,
+      });
+      if (rpcError) throw rpcError;
+      toast.success("Scan queued");
+      await qc.invalidateQueries({ queryKey: ["security-scans"] });
+      await runAlerts();
+    } catch (e) {
+      toast.error("Could not queue scan", {
+        description: (e as Error).message,
+      });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runDrift = async () => {
+    setBusy("drift");
+    try {
+      const { error: rpcError } = await supabase.rpc("run_drift_scan", {
+        _user_agent: navigator.userAgent,
+      });
+      if (rpcError) throw rpcError;
+      toast.success("Permission drift check recorded");
+      await qc.invalidateQueries({ queryKey: ["security-scans"] });
+      await runAlerts();
+    } catch (e) {
+      toast.error("Drift check failed", {
+        description: (e as Error).message,
+      });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background px-4 py-8 md:px-10">
       <div className="mx-auto max-w-4xl space-y-8">
