@@ -24,6 +24,7 @@ import SecurityRunbook from "./pages/SecurityRunbook.tsx";
 import SecurityAccessLog from "./pages/SecurityAccessLog.tsx";
 import SecurityExports from "./pages/SecurityExports.tsx";
 import SecurityDashboard from "./pages/SecurityDashboard.tsx";
+import SecuritySettings from "./pages/SecuritySettings.tsx";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/security/dashboard" element={<RequireAdmin><SecurityDashboard /></RequireAdmin>} />
               <Route path="/security/access-log" element={<RequireAdmin><SecurityAccessLog /></RequireAdmin>} />
               <Route path="/security/exports" element={<RequireAdmin><SecurityExports /></RequireAdmin>} />
+              <Route path="/security/settings" element={<RequireAdmin><SecuritySettings /></RequireAdmin>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

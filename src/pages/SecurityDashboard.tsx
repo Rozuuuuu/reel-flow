@@ -9,9 +9,11 @@
  * Writes happen through `public.log_security_scan`, which also audits the run
  * into `security_access_log`.
  */
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Loader2,
   ShieldCheck,
@@ -124,6 +126,68 @@ const SecurityDashboard = () => {
     };
   }, [scans]);
 
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState<null | "scan" | "drift">(null);
+
+  const runAlerts = async () => {
+    const { data, error: fnError } = await supabase.functions.invoke(
+      "security-alerts",
+    );
+    if (fnError) {
+      toast.error("Alert check failed", { description: fnError.message });
+      return;
+    }
+    const sent = (data as { sent?: number } | null)?.sent ?? 0;
+    const skipped = (data as { skipped?: string } | null)?.skipped;
+    toast.success(
+      sent > 0
+        ? `${sent} alert email${sent === 1 ? "" : "s"} sent`
+        : `No alerts sent${skipped ? ` (${skipped})` : ""}`,
+    );
+  };
+
+  const queueScan = async () => {
+    setBusy("scan");
+    try {
+      const { error: rpcError } = await supabase.rpc("log_security_scan", {
+        _scanner: "helper-access-suite",
+        _status: "pending",
+        _suite: "security-definer",
+        _notes: "Queued from the security dashboard.",
+        _user_agent: navigator.userAgent,
+      });
+      if (rpcError) throw rpcError;
+      toast.success("Scan queued");
+      await qc.invalidateQueries({ queryKey: ["security-scans"] });
+      await runAlerts();
+    } catch (e) {
+      toast.error("Could not queue scan", {
+        description: (e as Error).message,
+      });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const runDrift = async () => {
+    setBusy("drift");
+    try {
+      const { error: rpcError } = await supabase.rpc("run_drift_scan", {
+        _user_agent: navigator.userAgent,
+      });
+      if (rpcError) throw rpcError;
+      toast.success("Permission drift check recorded");
+      await qc.invalidateQueries({ queryKey: ["security-scans"] });
+      await runAlerts();
+    } catch (e) {
+      toast.error("Drift check failed", {
+        description: (e as Error).message,
+      });
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background px-4 py-8 md:px-10">
       <div className="mx-auto max-w-4xl space-y-8">
@@ -156,6 +220,7 @@ const SecurityDashboard = () => {
               ["/security/coverage", "Coverage"],
               ["/security/access-log", "Access log"],
               ["/security/exports", "Exports"],
+              ["/security/settings", "Settings"],
             ].map(([to, label]) => (
               <Link
                 key={to}
@@ -167,7 +232,31 @@ const SecurityDashboard = () => {
               </Link>
             ))}
           </nav>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button size="sm" onClick={queueScan} disabled={busy !== null}>
+              {busy === "scan" ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Clock className="mr-2 h-3.5 w-3.5" />
+              )}
+              Queue a scan
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={runDrift}
+              disabled={busy !== null}
+            >
+              {busy === "drift" ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShieldAlert className="mr-2 h-3.5 w-3.5" />
+              )}
+              Run permission drift check
+            </Button>
+          </div>
         </header>
+
 
         {isLoading && (
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-6 text-sm text-muted-foreground">
