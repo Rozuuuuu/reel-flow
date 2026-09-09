@@ -9,9 +9,11 @@
  * Writes happen through `public.log_security_scan`, which also audits the run
  * into `security_access_log`.
  */
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Loader2,
   ShieldCheck,
@@ -156,6 +158,7 @@ const SecurityDashboard = () => {
               ["/security/coverage", "Coverage"],
               ["/security/access-log", "Access log"],
               ["/security/exports", "Exports"],
+              ["/security/settings", "Settings"],
             ].map(([to, label]) => (
               <Link
                 key={to}
