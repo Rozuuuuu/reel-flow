@@ -667,6 +667,32 @@ export type Database = {
         }
         Relationships: []
       }
+      viewer_interests: {
+        Row: {
+          interests: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          interests?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          interests?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viewer_interests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
