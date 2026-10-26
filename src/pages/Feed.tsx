@@ -4,15 +4,18 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeedVideos, useVideoById, FeedVideo } from "@/hooks/useVideos";
 import { useMyFollowingIds } from "@/hooks/useFollows";
+import { useInterests, useSaveInterests } from "@/hooks/useInterests";
+import { useRecommendations } from "@/hooks/useRecommendations";
+import { InterestPicker } from "@/components/InterestPicker";
 import { VideoCard } from "@/components/VideoCard";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Film, UserPlus } from "lucide-react";
+import { Loader2, Film, UserPlus, Sparkles, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { DeepLinkBanner } from "@/components/DeepLinkBanner";
 
-type FeedTab = "for-you" | "following";
+type FeedTab = "for-you" | "following" | "picks";
 
 export default function Feed() {
   const { user } = useAuth();
@@ -22,11 +25,19 @@ export default function Feed() {
   const deepLinkCommentId = searchParams.get("c");
   const { data: videos, isLoading } = useFeedVideos(user?.id);
   const { data: followingIds } = useMyFollowingIds(user?.id);
+  const { data: interests, isLoading: interestsLoading } = useInterests();
+  const saveInterests = useSaveInterests();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [tuneError, setTuneError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(true);
   // When arriving via ?v=, default to "for-you" so the target video is guaranteed in view
   const [tab, setTab] = useState<FeedTab>(deepLinkVideoId ? "for-you" : "for-you");
+  const picksActive = tab === "picks";
+
+  const { data: recs, recommendations, reasonFor, isLoading: recsLoading, isError: recsError, refetch: refetchRecs } =
+    useRecommendations(interests, picksActive);
 
   // If the deep-linked video isn't in the base feed, fetch it separately
   const baseList = videos ?? [];
@@ -58,6 +69,8 @@ export default function Feed() {
     return base;
   }, [baseList, tab, followingIds, deepLinkVideoId, baseHasDeepLink, fallbackVideo]);
 
+  const displayList = picksActive ? recommendations : list;
+
   // Detect which video is centered
   useEffect(() => {
     const root = containerRef.current;
@@ -79,7 +92,7 @@ export default function Feed() {
 
     sections.forEach((s) => observer.observe(s));
     return () => observer.disconnect();
-  }, [list]);
+  }, [displayList]);
 
   // Reset index when switching tabs
   useEffect(() => {
@@ -161,6 +174,19 @@ export default function Feed() {
         toast.error("Couldn't like");
       }
     }
+    // Picks render from the by-ids cache — keep liked state in sync there too.
+    void qc.invalidateQueries({ queryKey: ["videos-by-ids"] });
+  };
+
+  const handleSaveInterests = (next: string[]) => {
+    setTuneError(null);
+    saveInterests.mutate(next, {
+      onSuccess: () => {
+        setPickerOpen(false);
+        toast.success("Picks updated");
+      },
+      onError: () => setTuneError("Couldn't save your interests. Try again."),
+    });
   };
 
   if (isLoading) {
@@ -180,7 +206,7 @@ export default function Feed() {
       <div
         role="tablist"
         aria-label="Feed type"
-        className="pointer-events-auto flex items-center gap-7 px-4 py-2"
+        className="pointer-events-auto flex items-center gap-5 px-4 py-2 sm:gap-7"
         style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
       >
         <button
@@ -188,7 +214,7 @@ export default function Feed() {
           aria-selected={tab === "following"}
           onClick={() => setTab("following")}
           className={cn(
-            "font-display text-xl italic leading-none transition drop-shadow",
+            "font-display text-lg italic leading-none transition drop-shadow sm:text-xl",
             tab === "following" ? "text-white" : "text-white/55 hover:text-white/85",
           )}
         >
@@ -203,7 +229,7 @@ export default function Feed() {
           aria-selected={tab === "for-you"}
           onClick={() => setTab("for-you")}
           className={cn(
-            "font-display text-xl italic leading-none transition drop-shadow",
+            "font-display text-lg italic leading-none transition drop-shadow sm:text-xl",
             tab === "for-you" ? "text-white" : "text-white/55 hover:text-white/85",
           )}
         >
@@ -212,11 +238,27 @@ export default function Feed() {
             <span className="mx-auto mt-1 block h-[2px] w-7 rounded-full bg-gradient-to-r from-sunset-orange to-sunset-pink" />
           )}
         </button>
+        <span aria-hidden className="h-4 w-px bg-white/20" />
+        <button
+          role="tab"
+          aria-selected={tab === "picks"}
+          onClick={() => setTab("picks")}
+          className={cn(
+            "flex items-center gap-1.5 font-display text-lg italic leading-none transition drop-shadow sm:text-xl",
+            tab === "picks" ? "text-white" : "text-white/55 hover:text-white/85",
+          )}
+        >
+          <Sparkles className={cn("h-4 w-4", tab === "picks" ? "text-sunset-orange" : "text-white/55")} />
+          Picks
+          {tab === "picks" && (
+            <span className="mx-auto mt-1 block h-[2px] w-7 rounded-full bg-gradient-to-r from-sunset-orange to-sunset-pink" />
+          )}
+        </button>
       </div>
     </div>
   );
 
-  if (list.length === 0) {
+  if (list.length === 0 && !picksActive) {
     const isFollowingEmpty = tab === "following";
     return (
       <div className="relative h-[100dvh] bg-background sunset-glow">
@@ -255,6 +297,145 @@ export default function Feed() {
               {isFollowingEmpty ? "Find creators" : "Upload a reel"}
             </Link>
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (picksActive) {
+    const interestsEmpty = !interestsLoading && (interests ?? []).length === 0;
+    const showPicker = pickerOpen || interestsEmpty;
+
+    const picksShell = (child: React.ReactNode) => (
+      <div className="relative h-[100dvh] bg-background sunset-glow">
+        <div className="grain absolute inset-0 pointer-events-none" />
+        {tabs}
+        {child}
+      </div>
+    );
+
+    if (interestsLoading) {
+      return picksShell(
+        <div className="relative flex h-full flex-col items-center justify-center gap-5">
+          <div className="conic-ring h-16 w-16 rounded-full" />
+          <p className="font-display text-xl italic text-foreground/90">Reading your taste…</p>
+        </div>
+      );
+    }
+
+    if (showPicker) {
+      return picksShell(
+        <InterestPicker
+          initial={interests ?? []}
+          saving={saveInterests.isPending}
+          error={tuneError}
+          onSave={handleSaveInterests}
+          onCancel={interestsEmpty ? undefined : () => setPickerOpen(false)}
+        />
+      );
+    }
+
+    if (recsError) {
+      return picksShell(
+        <div className="relative flex h-full flex-col items-center justify-center gap-6 px-8 text-center">
+          <Sparkles className="h-10 w-10 text-sunset-orange" strokeWidth={1.5} />
+          <div className="max-w-xs">
+            <h2 className="font-display text-3xl italic text-foreground">Picks hit a<br />snag.</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              The AI ranking service didn't respond. Give it another go.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="brand"
+              size="lg"
+              className="rounded-full px-7 uppercase tracking-[0.18em] text-xs"
+              onClick={() => void refetchRecs()}
+            >
+              Try again
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="rounded-full px-5 uppercase tracking-[0.18em] text-xs"
+              onClick={() => setPickerOpen(true)}
+            >
+              <SlidersHorizontal className="mr-1.5 h-4 w-4" /> Tune
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (recsLoading || (recs !== undefined && recommendations.length === 0 && !recsError)) {
+      if (recsLoading) {
+        return picksShell(
+          <div className="relative flex h-full flex-col items-center justify-center gap-5">
+            <div className="conic-ring h-16 w-16 rounded-full" />
+            <p className="font-display text-xl italic text-foreground/90">Ranking reels for you…</p>
+          </div>
+        );
+      }
+      return picksShell(
+        <div className="relative flex h-full flex-col items-center justify-center gap-6 px-8 text-center">
+          <Sparkles className="h-10 w-10 text-sunset-orange" strokeWidth={1.5} />
+          <div className="max-w-xs">
+            <h2 className="font-display text-3xl italic text-foreground">No fresh<br />picks yet.</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Tune your interests or like and save a few reels to sharpen them.
+            </p>
+          </div>
+          <Button
+            variant="brand"
+            size="lg"
+            className="rounded-full px-7 uppercase tracking-[0.18em] text-xs"
+            onClick={() => setPickerOpen(true)}
+          >
+            <SlidersHorizontal className="mr-1.5 h-4 w-4" /> Tune interests
+          </Button>
+        </div>
+      );
+    }
+
+    const activeReason = reasonFor(displayList[activeIndex]?.id);
+
+    return (
+      <div className="relative h-[100dvh] bg-black">
+        {tabs}
+
+        {activeReason && (
+          <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex justify-center px-4">
+            <div className="pointer-events-auto flex max-w-[calc(100%-5.5rem)] items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5 shrink-0 text-sunset-orange" />
+              <span className="truncate">{activeReason}</span>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                aria-label="Tune interests"
+                className="shrink-0 rounded-full bg-white/10 p-1 transition hover:bg-white/20"
+              >
+                <SlidersHorizontal className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div
+          ref={containerRef}
+          className="scrollbar-hide h-full snap-y snap-mandatory overflow-y-scroll"
+          style={{ scrollBehavior: "smooth" }}
+        >
+          {displayList.map((v, i) => (
+            <div key={v.id} data-video-index={i}>
+              <VideoCard
+                video={v}
+                active={i === activeIndex}
+                muted={muted}
+                onToggleMute={() => setMuted((m) => !m)}
+                onToggleLike={() => handleToggleLike(v)}
+              />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -306,7 +487,7 @@ export default function Feed() {
           onRetry={() => fallbackQuery.refetch()}
           onDismiss={clearDeepLink}
         />
-      )}
+      )
 
 
       <div
